@@ -66,7 +66,7 @@ def train():
             x = batch[0].to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
-            loss = model.loss_function(x, mu, logvar)  # using our loss_function that includes the reconstruction and KL terms
+            loss = model.loss(x, mu, logvar)  # using our loss_function that includes the reconstruction and KL terms
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
