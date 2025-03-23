@@ -1,13 +1,12 @@
-# src/train.py
-
-import os
 import yaml
 import torch
+import random
 import torch.optim as optim
+from torchvision.transforms.functional import to_pil_image
 import neptune.new as neptune
+import neptune.types
 from data.mnist_dummy_data import load_mnist_data
-
-from models.VAE import VAE  # Ensure your model is in src/models/VAE.py
+from models.VAE import VAE
 
 # ---------------------------
 # Load configuration
@@ -18,46 +17,37 @@ def load_config(config_path="config.yaml"):
     return config
 
 # ---------------------------
-# Create Dummy Data
+# Dummy Data function
 # ---------------------------
-
 def dummy_data(config):
-    """
-    Returns an MNIST DataLoader resized to whatever the
-    VAE expects (e.g., 64x64) or the original MNIST size (28x28),
-    depending on how you implemented load_mnist_data.
-
-    Args:
-        config (dict): Configuration dictionary loaded from config.yaml.
-
-    Returns:
-        DataLoader: A DataLoader yielding MNIST batches.
-    """
     batch_size = config["training"]["batch_size"]
     return load_mnist_data(batch_size)
 
+
 # ---------------------------
-# Main Training Loop
+# Training function
 # ---------------------------
 def train():
-    # Load configuration
-    config = load_config()
+    config = load_config() # Load configuration
 
-    # Initialize Neptune run using the new API
-    run = neptune.init_run(
+    run = neptune.init_run( # Initialize Neptune run 
         project=config["experiment"]["neptune_project"],
         api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI0ZGE0NDljMi04NGIwLTRhNDEtOGU1ZC1kNmNhZWNlZTRhOTUifQ==",
         name=config["experiment"]["name"],
         tags=["dummy-data", "vae"]
     )
 
-    # Log the configuration parameters as metadata
-    run["parameters"] = config
+    run["parameters"] = config # Log the configuration parameters as metadata
 
-    # Create dummy data loader
-    dataloader = dummy_data(config)
 
-    # Instantiate model and optimizer
+    # < ---- Load data ---- >
+    if config["data"]["dummy"] == True:
+        dataloader = dummy_data(config)
+    else:
+        raise NotImplementedError("You need to implement a function to load your dataset.")
+
+
+    # < ---- Init model and optimizer ---- >
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = VAE(
         in_channels=config["model"]["in_channels"],
@@ -67,7 +57,7 @@ def train():
 
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
 
-    # Training loop
+    # < ---- Training loop ---- >
     num_epochs = config["training"]["epochs"]
     for epoch in range(num_epochs):
         model.train()
@@ -76,17 +66,24 @@ def train():
             x = batch[0].to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
-            loss = model.loss(x, mu, logvar)  # Loss that includes reconstruction and KL divergence
+            loss = model.loss(x, mu, logvar)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
         avg_loss = total_loss / len(dataloader)
         
-        # Log training loss to Neptune
+        # < ---- Log training loss to Neptune ---- >
         run["train/loss"].log(avg_loss, step=epoch)
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
 
-    # Finish Neptune run
+        # < ---- Log origional and reconstruction to Neptune ---- >
+        # Random sample from each epoch
+        idx = random.randint(0, x.size(0) - 1)
+        original = x[idx].cpu()
+        reconstructed = recon_x[idx].detach().cpu()
+        run[f"visuals/original_epoch_{epoch}"] = neptune.types.File.as_image(to_pil_image(original))
+        run[f"visuals/reconstruction_epoch_{epoch}"] = neptune.types.File.as_image(to_pil_image(reconstructed))
+
     run.stop()
 
 if __name__ == "__main__":
