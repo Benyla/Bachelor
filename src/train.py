@@ -1,5 +1,6 @@
 import yaml
 import torch
+import os
 import random
 import torch.optim as optim
 from torchvision.transforms.functional import to_pil_image
@@ -32,7 +33,7 @@ def train():
 
     run = neptune.init_run( # Initialize Neptune run 
         project=config["experiment"]["neptune_project"],
-        api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI0ZGE0NDljMi04NGIwLTRhNDEtOGU1ZC1kNmNhZWNlZTRhOTUifQ==",
+        api_token = os.getenv("NEPTUNE_API_TOKEN"),
         name=config["experiment"]["name"],
         tags=["dummy-data", "vae"]
     )
