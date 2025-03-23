@@ -2,8 +2,7 @@
 
 experiment:
   name: "dummy_vae_experiment"
-  neptune_project: "your_workspace/your_project"
-  neptune_api_token: "YOUR_API_TOKEN"  # Consider using environment variables for secrets
+  neptune_project: "benyla/Bachelor"
 
 training:
   epochs: 10
@@ -11,9 +10,9 @@ training:
   learning_rate: 0.001
 
 model:
-  in_channels: 3
-  latent_dim: 128
+  in_channels: 1
+  latent_dim: 20  
   image_size: 64
 
 data:
-  dummy: true  # A flag to indicate using dummy data
+  dummy: true 
