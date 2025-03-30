@@ -11,12 +11,10 @@ class VAE(nn.Module):
         latent_dim (int): Dimensionality of the latent space.
         image_size (int): Height/width of the (square) input image.
     """
-    def __init__(self, in_channels=3, latent_dim=128, image_size=64):
+    def __init__(self, in_channels=3, latent_dim=128):
         super(VAE, self).__init__()
         self.in_channels = in_channels
         self.latent_dim = latent_dim
-        feature_map_size = image_size // 8
-        self.feature_dim = 128 * feature_map_size * feature_map_size
 
         # -----------------------
         # ENCODER
@@ -32,17 +30,17 @@ class VAE(nn.Module):
             nn.Flatten()  # -> (128*8*8)
         )
         # Fully-connected layers to produce the latent Gaussian parameters
-        self.fc_mu = nn.Linear(self.feature_dim, latent_dim)
-        self.fc_logvar = nn.Linear(self.feature_dim, latent_dim)
+        self.fc_mu = nn.Linear(128*8*8, latent_dim)
+        self.fc_logvar = nn.Linear(128*8*8, latent_dim)
 
         # -----------------------
         # DECODER
         # -----------------------
         # Map latent vector back to flattened feature map
-        self.decoder_input = nn.Linear(latent_dim, self.feature_dim)
+        self.decoder_input = nn.Linear(latent_dim, 128*8*8)
         self.decoder = nn.Sequential(
             # Reshape to (128, 8, 8)
-            nn.Unflatten(1, (128, feature_map_size, feature_map_size)),
+            nn.Unflatten(1, (128, 8, 8)),
             nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),  # -> (64, 16, 16)
             nn.ReLU(),
             nn.ConvTranspose2d(64, 32, kernel_size=4, stride=2, padding=1),   # -> (32, 32, 32)
