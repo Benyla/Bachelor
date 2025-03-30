@@ -6,13 +6,13 @@ experiment:
 
 training:
   epochs: 30
-  batch_size: 32
+  batch_size: 16
   learning_rate: 0.001
 
 model:
-  in_channels: 1
-  latent_dim: 20  
-  image_size: 68
+  in_channels: 3
+  latent_dim: 20
 
 data:
-  dummy: True 
+  dummy: False
+  folder_path: "data/sample_cell_data"

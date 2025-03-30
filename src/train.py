@@ -14,7 +14,7 @@ from models.VAE import VAE
 # ---------------------------
 # Load configuration
 # ---------------------------
-def load_config(config_path="config.yaml"):
+def load_config(config_path="config2.yaml"):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
@@ -45,7 +45,7 @@ def train():
         project=config["experiment"]["neptune_project"],
         api_token = os.getenv("NEPTUNE_API_TOKEN"),
         name=config["experiment"]["name"],
-        tags=["dummy-data", "vae"]
+        tags=["vae"]
     )
 
     run["parameters"] = config # Log the configuration parameters as metadata
@@ -54,20 +54,21 @@ def train():
     # < ---- Load data ---- >
     if config["data"]["dummy"] == True:
         dataloader = dummy_data(config)
+        print("selecting dummy data")
     else:
         dataloader = get_dataloader(
             folder_path=config["data"]["folder_path"],
             batch_size=config["training"]["batch_size"]
         )
+        print("selecting cell data")
 
 
     # < ---- Init model and optimizer ---- >
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = VAE(
         in_channels=config["model"]["in_channels"],
-        latent_dim=config["model"]["latent_dim"],
-        image_size=config["model"]["image_size"]
-    ).to(device)
+        latent_dim=config["model"]["latent_dim"]
+        ).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
 
@@ -77,7 +78,7 @@ def train():
         model.train()
         total_loss = 0.0
         for batch in dataloader:
-            x = batch[0].to(device)
+            x = batch.to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
             loss = model.loss(x, mu, logvar)

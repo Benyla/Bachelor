@@ -29,6 +29,7 @@ class VAE(nn.Module):
             nn.ReLU(),
             nn.Flatten()  # -> (128*8*8)
         )
+
         # Fully-connected layers to produce the latent Gaussian parameters
         self.fc_mu = nn.Linear(128*8*8, latent_dim)
         self.fc_logvar = nn.Linear(128*8*8, latent_dim)

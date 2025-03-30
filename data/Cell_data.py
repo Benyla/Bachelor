@@ -2,6 +2,7 @@ import os
 import torch
 import numpy as np
 from torch.utils.data import Dataset
+import torch.nn.functional as F
 
 class CellDataset(Dataset):
     def __init__(self, folder_path):
@@ -24,5 +25,9 @@ class CellDataset(Dataset):
                 img[c] = (img[c] - cmin) / (cmax - cmin)
             else:
                 img[c] = 0.0
-        img_tensor = torch.from_numpy(img)
-        return img_tensor
+        # < -- Resize the image to 64x64 -- >
+        img_tensor = torch.from_numpy(img).unsqueeze(0)
+        img_resized = F.interpolate(img_tensor, size=(64, 64), mode="bilinear", align_corners=False)
+        img_resized = img_resized.squeeze(0) 
+        # < ------------------------------- >
+        return img_resized
