@@ -7,6 +7,8 @@ from torchvision.transforms.functional import to_pil_image
 import neptune.new as neptune
 import neptune.types
 from data.mnist_dummy_data import load_mnist_data
+from torch.utils.data import DataLoader
+from data.Cell_data import CellDataset
 from models.VAE import VAE
 
 # ---------------------------
@@ -23,6 +25,14 @@ def load_config(config_path="config.yaml"):
 def dummy_data(config):
     batch_size = config["training"]["batch_size"]
     return load_mnist_data(batch_size)
+
+# ---------------------------
+# Cell data function
+# ---------------------------
+def get_dataloader(folder_path, batch_size=32):
+    dataset = CellDataset(folder_path)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    return loader
 
 
 # ---------------------------
@@ -45,7 +55,10 @@ def train():
     if config["data"]["dummy"] == True:
         dataloader = dummy_data(config)
     else:
-        raise NotImplementedError("You need to implement a function to load your dataset.")
+        dataloader = get_dataloader(
+            folder_path=config["data"]["folder_path"],
+            batch_size=config["training"]["batch_size"]
+        )
 
 
     # < ---- Init model and optimizer ---- >
