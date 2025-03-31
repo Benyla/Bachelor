@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Specify the full path to your processed images folder
-processed_folder = "/zhome/e9/c/186947/Bachelor/data/processed/cell_images_processed"
+processed_folder = "/zhome/e9/c/186947/cell_images_processed"
 
 # Get a list of all .pt files in that folder
 pt_files = glob.glob(os.path.join(processed_folder, "*.pt"))
