@@ -5,7 +5,7 @@ import random
 import torch.optim as optim
 import tqdm
 from torchvision.transforms.functional import to_pil_image
-import neptune.new as neptune
+import neptune
 import neptune.types
 from data.mnist_dummy_data import load_mnist_data
 from torch.utils.data import DataLoader
