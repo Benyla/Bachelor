@@ -4,7 +4,7 @@ import sys
 import os
 import random
 import torch.optim as optim
-import tqdm
+from tqdm import tqdm
 from torchvision.transforms.functional import to_pil_image
 import neptune
 import neptune.types
