@@ -10,7 +10,7 @@ import neptune
 import neptune.types
 from torch.utils.data import DataLoader
 from models.VAE import VAE
-from data_works import get_data, transform_cell_image, SingleCellDataset
+from data_works import get_data, SingleCellDataset
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
