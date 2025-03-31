@@ -41,9 +41,9 @@ def train():
 
     # < ---- Load data ---- >
     train_files, val_files, test_files = get_data()
-    train_dataset = SingleCellDataset(train_files, transform=transform_cell_image)
-    val_dataset = SingleCellDataset(val_files, transform=transform_cell_image)
-    test_dataset = SingleCellDataset(test_files, transform=transform_cell_image)
+    train_dataset = SingleCellDataset(train_files)
+    val_dataset = SingleCellDataset(val_files)
+    test_dataset = SingleCellDataset(test_files)
     train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
@@ -63,7 +63,7 @@ def train():
     for epoch in tqdm(range(num_epochs)):
         model.train()
         total_loss = 0.0
-        for batch in train_loader:
+        for batch, ids in train_loader:
             x = batch.to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
