@@ -38,7 +38,7 @@ def transform_cell_image(np_img):
     return img_resized
 
 # Define where to store the processed images
-output_folder = '/zhome/e9/c/186947/Bachelor/cell_images_processed'
+output_folder = '/zhome/e9/c/186947/cell_images_processed'
 
 
 # Process each file and save the tensor to disk
