@@ -3,6 +3,7 @@ import torch
 import os
 import random
 import torch.optim as optim
+import tqdm
 from torchvision.transforms.functional import to_pil_image
 import neptune.new as neptune
 import neptune.types
@@ -14,7 +15,7 @@ from data_works import get_data, transform_cell_image, SingleCellDataset
 # ---------------------------
 # Load configuration
 # ---------------------------
-def load_config(config_path="config2.yaml"):
+def load_config(config_path="config3.yaml"):
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
     return config
@@ -68,7 +69,7 @@ def train():
 
     # < ---- Training loop ---- >
     num_epochs = config["training"]["epochs"]
-    for epoch in range(num_epochs):
+    for epoch in tqdm(range(num_epochs)):
         model.train()
         total_loss = 0.0
         for batch in train_loader:

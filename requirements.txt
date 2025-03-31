@@ -1,0 +1,21 @@
+# Core PyTorch
+torch>=1.13.0
+torchvision>=0.14.0
+
+# Neural network utilities
+numpy>=1.21.0
+scikit-learn>=1.0.2
+
+# Data loading and image processing
+Pillow>=9.0.0
+tensorflow>=2.10.0
+
+# Progress bar
+tqdm>=4.64.0
+
+# Logging and experiment tracking
+neptune>=1.9.1
+neptune-client>=0.16.25
+
+# YAML config parsing
+pyyaml>=6.0
