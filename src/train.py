@@ -1,8 +1,10 @@
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # Ensure we have access all files in repo
+
 import yaml
 import torch
-import sys
-import os
 import random
+import argparse
 import torch.optim as optim
 from tqdm import tqdm
 from torchvision.transforms.functional import to_pil_image
@@ -12,7 +14,6 @@ from torch.utils.data import DataLoader
 from models.VAE import VAE
 from data_works import get_data, SingleCellDataset
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # ---------------------------
 # Load configuration
@@ -26,8 +27,8 @@ def load_config(config_path="config3.yaml"):
 # ---------------------------
 # Training function
 # ---------------------------
-def train():
-    config = load_config() # Load configuration
+def train(config_path="config3.yaml"):
+    config = load_config(config_path) # Load configuration
 
     run = neptune.init_run( # Initialize Neptune run 
         project=config["experiment"]["neptune_project"],
@@ -88,6 +89,8 @@ def train():
     run.stop()
 
 if __name__ == "__main__":
-    train()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, default="config3.yaml", help="Path to config file")
+    args = parser.parse_args()
 
-
+    train(config_path=args.config)
