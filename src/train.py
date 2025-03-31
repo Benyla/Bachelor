@@ -8,8 +8,8 @@ import neptune.new as neptune
 import neptune.types
 from data.mnist_dummy_data import load_mnist_data
 from torch.utils.data import DataLoader
-from data.Cell_data import CellDataset
 from models.VAE import VAE
+from data_works import get_data, transform_cell_image, SingleCellDataset
 
 # ---------------------------
 # Load configuration
@@ -25,14 +25,6 @@ def load_config(config_path="config2.yaml"):
 def dummy_data(config):
     batch_size = config["training"]["batch_size"]
     return load_mnist_data(batch_size)
-
-# ---------------------------
-# Cell data function
-# ---------------------------
-def get_dataloader(folder_path, batch_size=32):
-    dataset = CellDataset(folder_path)
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    return loader
 
 
 # ---------------------------
@@ -53,14 +45,16 @@ def train():
 
     # < ---- Load data ---- >
     if config["data"]["dummy"] == True:
-        dataloader = dummy_data(config)
+        train_loader = dummy_data(config)
         print("selecting dummy data")
     else:
-        dataloader = get_dataloader(
-            folder_path=config["data"]["folder_path"],
-            batch_size=config["training"]["batch_size"]
-        )
-        print("selecting cell data")
+        train_files, val_files, test_files = get_data()
+        train_dataset = SingleCellDataset(train_files, transform=transform_cell_image)
+        val_dataset = SingleCellDataset(val_files, transform=transform_cell_image)
+        test_dataset = SingleCellDataset(test_files, transform=transform_cell_image)
+        train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=config["training"]["batch_size"], shuffle=False)
 
 
     # < ---- Init model and optimizer ---- >
@@ -77,7 +71,7 @@ def train():
     for epoch in range(num_epochs):
         model.train()
         total_loss = 0.0
-        for batch in dataloader:
+        for batch in train_loader:
             x = batch.to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
@@ -85,7 +79,7 @@ def train():
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-        avg_loss = total_loss / len(dataloader)
+        avg_loss = total_loss / len(train_loader)
         
         # < ---- Log training loss to Neptune ---- >
         run["train/loss"].log(avg_loss, step=epoch)
