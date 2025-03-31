@@ -1,5 +1,6 @@
 import yaml
 import torch
+import sys
 import os
 import random
 import torch.optim as optim
@@ -11,6 +12,8 @@ from data.mnist_dummy_data import load_mnist_data
 from torch.utils.data import DataLoader
 from models.VAE import VAE
 from data_works import get_data, transform_cell_image, SingleCellDataset
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # ---------------------------
 # Load configuration
