@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Specify the full path to your processed images folder
-processed_folder = "/zhome/e9/c/186947/cell_images_processed"
+processed_folder = "cell_images_processed"
 
 # Get a list of all .pt files in that folder
 pt_files = glob.glob(os.path.join(processed_folder, "*.pt"))
@@ -15,7 +15,7 @@ if not pt_files:
     exit(1)
 
 # Sort files (optional) and pick the first file
-first_file = sorted(pt_files)[0]
+first_file = sorted(pt_files)[35]
 
 # Load the tensor using torch.load
 image_tensor = torch.load(first_file)
