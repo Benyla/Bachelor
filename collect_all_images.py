@@ -41,7 +41,7 @@ def transform_cell_image(np_img):
 output_folder = '/zhome/e9/c/186947/cell_images_processed'
 
 # Process each file and save the tensor to disk
-for file_path in tqdm(all_files[0:1000], desc="Processing images"):
+for file_path in tqdm(all_files, desc="Processing images"):
     file_id = os.path.splitext(os.path.basename(file_path))[0]
     output_path = os.path.join(output_folder, file_id + '.pt')
     try:
