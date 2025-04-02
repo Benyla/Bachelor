@@ -34,7 +34,7 @@ def train(config, logger, train_loader):
         model.train()
         total_loss = 0.0
         
-        for batch, ids in train_loader:
+        for batch_idx, (batch, ids) in enumerate(train_loader):
             x = batch.to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
@@ -43,7 +43,8 @@ def train(config, logger, train_loader):
             optimizer.step()
             total_loss += loss.item()
 
-            logger.log_loss(loss, step=batch)
+            global_step = epoch * len(train_loader) + batch_idx
+            logger.log_loss(loss.item(), step=global_step)
         
         avg_loss = total_loss / len(train_loader)
         logger.log_loss(avg_loss, step=epoch)
