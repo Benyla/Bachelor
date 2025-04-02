@@ -29,6 +29,7 @@ def train(config, logger, train_loader):
     
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
     num_epochs = config["training"]["epochs"]
+    logging_frequency = config["training"].get("logging_frequency", 10)
     
     for epoch in tqdm(range(num_epochs), desc="Training epochs"):
         model.train()
@@ -40,7 +41,7 @@ def train(config, logger, train_loader):
             loss = model.loss(x, mu, logvar)
             loss.backward()
             optimizer.step()
-
+            
             global_step = epoch * len(train_loader) + batch_idx
             logger.log_loss(loss.item(), step=global_step, kind="batch")
 
