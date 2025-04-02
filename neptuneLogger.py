@@ -20,8 +20,11 @@ class NeptuneLogger:
         self.run["parameters"] = config # Log the configuration parameters as metadata
 
 
-    def log_loss(self, loss, step):
-        self.run["train/loss"].log(loss, step=step)
+    def log_loss(self, loss, step, kind="epoch"):
+        if kind == "epoch":
+            self.run["train/loss_epoch"].log(loss, step=step)
+        elif kind == "batch":
+            self.run["train/loss_batch"].log(loss, step=step)
 
 
     def log_images(self, x, recon_x, step):

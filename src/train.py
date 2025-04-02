@@ -44,10 +44,10 @@ def train(config, logger, train_loader):
             total_loss += loss.item()
 
             global_step = epoch * len(train_loader) + batch_idx
-            logger.log_loss(loss.item(), step=global_step)
+            logger.log_loss(loss.item(), step=global_step, kind="batch")
         
         avg_loss = total_loss / len(train_loader)
-        logger.log_loss(avg_loss, step=epoch)
+        logger.log_loss(avg_loss, step=epoch, kind="epoch")
         print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
         
         # Log the original and reconstructed images as a combined figure
