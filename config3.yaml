@@ -3,11 +3,11 @@
 experiment:
   name: "cell_vae_experiment_full_data"
   neptune_project: "benyla/Bachelor"
-  tags: ["cell_vae", "full_data"]
+  tags: "cell_vae -- full_data"
 
 training:
-  epochs: 30
-  batch_size: 32
+  epochs: 20
+  batch_size: 64
   learning_rate: 0.001
 
 model:

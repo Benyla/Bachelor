@@ -12,7 +12,10 @@ class NeptuneLogger:
             project=config["experiment"]["neptune_project"],
             api_token = os.getenv("NEPTUNE_API_TOKEN"),
             name=config["experiment"]["name"],
-            tags=config["experiment"]["tags"]
+            tags=config["experiment"]["tags"],
+            capture_hardware_metrics=False,   # <- disable hardware metrics
+            capture_stderr=False,
+            capture_stdout=False
         )
         self.run["parameters"] = config # Log the configuration parameters as metadata
 

@@ -42,6 +42,8 @@ def train(config, logger, train_loader):
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
+
+            logger.log_loss(avg_loss, step=batch)
         
         avg_loss = total_loss / len(train_loader)
         logger.log_loss(avg_loss, step=epoch)
@@ -69,6 +71,8 @@ def main():
     train_dataset = SingleCellDataset(train_files)
     if config["data"]["test"] == True:
         train_dataset = Subset(train_dataset, list(range(10000)))
+        print('Training on subset of images (testing)')
+        print(f"Subset size: {len(train_dataset)}")
 
 
     # val_dataset and test_dataset can be used later if needed
