@@ -32,7 +32,6 @@ def train(config, logger, train_loader):
     
     for epoch in tqdm(range(num_epochs), desc="Training epochs"):
         model.train()
-        total_loss = 0.0
         
         for batch_idx, (batch, ids) in enumerate(train_loader):
             x = batch.to(device)
@@ -41,15 +40,10 @@ def train(config, logger, train_loader):
             loss = model.loss(x, mu, logvar)
             loss.backward()
             optimizer.step()
-            total_loss += loss.item()
 
             global_step = epoch * len(train_loader) + batch_idx
             logger.log_loss(loss.item(), step=global_step, kind="batch")
-        
-        avg_loss = total_loss / len(train_loader)
-        logger.log_loss(avg_loss, step=epoch, kind="epoch")
-        print(f"Epoch [{epoch+1}/{num_epochs}], Loss: {avg_loss:.4f}")
-        
+
         # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
     
@@ -76,8 +70,8 @@ def main():
         print(f"Subset size: {len(train_dataset)}")
 
 
-    # val_dataset and test_dataset can be used later if needed
-    train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True)
+    # drop_last=True ensures that the last incomplete batch is dropped (caused problems with loss visualization)
+    train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True, drop_last=True) 
     
     # Start training
     train(config, logger, train_loader)
