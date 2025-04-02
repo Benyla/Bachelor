@@ -43,7 +43,7 @@ def train(config, logger, train_loader):
             optimizer.step()
             total_loss += loss.item()
 
-            logger.log_loss(avg_loss, step=batch)
+            logger.log_loss(loss, step=batch)
         
         avg_loss = total_loss / len(train_loader)
         logger.log_loss(avg_loss, step=epoch)
