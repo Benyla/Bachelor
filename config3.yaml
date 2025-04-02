@@ -3,6 +3,7 @@
 experiment:
   name: "cell_vae_experiment_full_data"
   neptune_project: "benyla/Bachelor"
+  tags: ["cell_vae", "full_data"]
 
 training:
   epochs: 30
@@ -14,4 +15,4 @@ model:
   latent_dim: 150
 
 data:
-  dummy: False
+  test: True

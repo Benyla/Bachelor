@@ -31,7 +31,7 @@ def get_data():
     """
     # Updated data root: processed files are now stored here
     #data_root = '/zhome/e9/c/186947/cell_images_processed'
-    data_root = '/zhome/e9/c/186947/Bachelor/cell_images_processed'
+    data_root = '/work3/s224194/cell_images_processed'
     pattern = os.path.join(data_root, '**', '*.pt')
     all_files = glob.glob(pattern, recursive=True)
     print(f"Found {len(all_files)} files.")
