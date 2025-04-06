@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 import yaml
 import torch
 import argparse
+import time
 import torch.optim as optim
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -30,9 +31,19 @@ def train(config, logger, train_loader, val_loader):
     ).to(device)
     
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=config["training"].get("lr_scheduler_factor", 0.1),
+        patience=config["training"].get("lr_scheduler_patience", 3),
+        verbose=True
+    )
+
     num_epochs = config["training"]["epochs"]
     
     for epoch in tqdm(range(num_epochs), desc="Training epochs"):
+        start_time = time.time()
         model.train()
         train_loss_total = 0.0
         
@@ -51,6 +62,12 @@ def train(config, logger, train_loader, val_loader):
 
         logger.log_metrics({"train": avg_train_loss, "val": avg_val_loss}, step=epoch, prefix="loss")
         logger.log_images(x, recon_x, step=epoch)
+
+        scheduler.step(avg_val_loss)
+        current_lr = optimizer.param_groups[0]['lr']
+        logger.log_metrics({"learning_rate": current_lr}, step=epoch)
+
+        logger.log_time({"epoch_time": time.time() - start_time}, step=epoch)
 
         save_model(logger, model, epoch, optimizer=optimizer, config=config)
     

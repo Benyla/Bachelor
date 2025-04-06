@@ -25,6 +25,14 @@ class NeptuneLogger:
             metric_key = f"{prefix}/{key}" if prefix else key
             self.run[metric_key].log(value, step=step)
 
+    def log_time(self, timings: dict, step: int = None, prefix: str = "timing"):
+        """
+        Log timing-related metrics. For example: {"epoch_time": 12.34}
+        """
+        for key, value in timings.items():
+            tag = f"{prefix}/{key}" if prefix else key
+            self.run[tag].log(value, step=step)
+
 
     def log_images(self, x, recon_x, step):
         idx = random.randint(0, x.size(0) - 1)
