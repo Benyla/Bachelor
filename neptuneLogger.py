@@ -22,11 +22,11 @@ class NeptuneLogger:
 
     def log_metrics(self, metrics: dict, step: int = None, prefix: str = None):
         if prefix:
-            # Log the entire dictionary under the specified prefix.
-            # This creates a single metric "loss" with subkeys for different series.
-            self.run[prefix].log(metrics, step=step)
+            # Log each metric under the given prefix separately.
+            # For example, prefix "loss" will create "loss/train" and "loss/val"
+            for key, value in metrics.items():
+                self.run[f"{prefix}/{key}"].log(value, step=step)
         else:
-            # If no prefix is provided, log each metric individually.
             for key, value in metrics.items():
                 self.run[key].log(value, step=step)
 
