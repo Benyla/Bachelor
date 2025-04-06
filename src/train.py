@@ -11,6 +11,7 @@ from models.VAE import VAE
 from data_works import get_data, SingleCellDataset
 from neptuneLogger import NeptuneLogger
 from torch.utils.data import Subset
+from evaluate import validate
 
 
 def load_config(config_path):
@@ -19,7 +20,7 @@ def load_config(config_path):
     return config
 
 
-def train(config, logger, train_loader):
+def train(config, logger, train_loader, val_loader):
     # Initialize model and optimizer
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = VAE(
@@ -29,7 +30,6 @@ def train(config, logger, train_loader):
     
     optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
     num_epochs = config["training"]["epochs"]
-    logging_frequency = config["training"].get("logging_frequency", 10)
     
     for epoch in tqdm(range(num_epochs), desc="Training epochs"):
         model.train()
@@ -47,6 +47,8 @@ def train(config, logger, train_loader):
 
         # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
+        # Log the average val loss for the epoch
+        validate(model, logger, val_loader, device, global_step=(epoch + 1) * len(train_loader))
     
     logger.stop()
 
@@ -65,6 +67,7 @@ def main():
     # Load data
     train_files, val_files, test_files = get_data()
     train_dataset = SingleCellDataset(train_files)
+    val_dataset = SingleCellDataset(val_files)
     if config["data"]["test"] == True:
         train_dataset = Subset(train_dataset, list(range(10000)))
         print('Training on subset of images (testing)')
@@ -73,9 +76,10 @@ def main():
 
     # drop_last=True ensures that the last incomplete batch is dropped (caused problems with loss visualization)
     train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True, drop_last=True) 
+    val_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"], shuffle=False, drop_last=True)
     
     # Start training
-    train(config, logger, train_loader)
+    train(config, logger, train_loader, val_loader)
 
 
 if __name__ == "__main__":
