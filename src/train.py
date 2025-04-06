@@ -12,6 +12,7 @@ from data_works import get_data, SingleCellDataset
 from neptuneLogger import NeptuneLogger
 from torch.utils.data import Subset
 from evaluate import validate
+from utils import save_model
 
 
 def load_config(config_path):
@@ -49,9 +50,9 @@ def train(config, logger, train_loader, val_loader):
         avg_val_loss = validate(model, val_loader, device, config=config)
 
         logger.log_metrics({"train": avg_train_loss, "val": avg_val_loss}, step=epoch, prefix="loss")
-
-        # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
+
+        save_model(logger, model, epoch, optimizer=optimizer, config=config)
     
     logger.stop()
 
@@ -71,6 +72,7 @@ def main():
     train_files, val_files, test_files = get_data()
     train_dataset = SingleCellDataset(train_files)
     val_dataset = SingleCellDataset(val_files)
+
     if config["data"]["test"] == True:
         train_dataset = Subset(train_dataset, list(range(2560)))
         val_dataset = Subset(val_dataset, list(range(256)))
