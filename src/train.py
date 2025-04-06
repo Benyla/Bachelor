@@ -46,7 +46,7 @@ def train(config, logger, train_loader, val_loader):
             train_loss_total += loss.item()
         
         avg_train_loss = train_loss_total / (len(train_loader)*config["training"]["batch_size"])
-        avg_val_loss = validate(model, logger, val_loader, device)
+        avg_val_loss = validate(model, val_loader, device, config=config)
 
         logger.log_metrics({"train": avg_train_loss, "val": avg_val_loss}, step=epoch, prefix="loss")
 
