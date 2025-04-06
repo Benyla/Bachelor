@@ -21,14 +21,9 @@ class NeptuneLogger:
 
 
     def log_metrics(self, metrics: dict, step: int = None, prefix: str = None):
-        if prefix:
-            # Log each metric under the given prefix separately.
-            # For example, prefix "loss" will create "loss/train" and "loss/val"
-            for key, value in metrics.items():
-                self.run[f"{prefix}/{key}"].log(value, step=step)
-        else:
-            for key, value in metrics.items():
-                self.run[key].log(value, step=step)
+        for key, value in metrics.items():
+            metric_key = f"{prefix}/{key}" if prefix else key
+            self.run[metric_key].log(value, step=step)
 
 
     def log_images(self, x, recon_x, step):

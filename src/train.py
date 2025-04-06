@@ -33,6 +33,7 @@ def train(config, logger, train_loader, val_loader):
     
     for epoch in tqdm(range(num_epochs), desc="Training epochs"):
         model.train()
+        train_loss_total = 0.0
         
         for batch_idx, (batch, ids) in enumerate(train_loader):
             x = batch.to(device)
@@ -41,15 +42,16 @@ def train(config, logger, train_loader, val_loader):
             loss = model.loss(x, mu, logvar)
             loss.backward()
             optimizer.step()
-            
-            global_step = epoch * len(train_loader) + batch_idx
-            logger.log_metrics({"train": loss.item()}, step=global_step, prefix="loss")
+
+            train_loss_total += loss.item()
+        
+        avg_train_loss = train_loss_total / (len(train_loader)*config["training"]["batch_size"])
+        avg_val_loss = validate(model, logger, val_loader, device, step=epoch)
+
+        logger.log_metrics({"train": avg_train_loss, "val": avg_val_loss}, step=epoch, prefix="loss")
 
         # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
-        # Log the average val loss for the epoch
-        val_loss = validate(model, logger, val_loader, device, global_step=(epoch + 1) * len(train_loader))
-        logger.log_metrics({"val": val_loss}, step=global_step, prefix="loss")
     
     logger.stop()
 
