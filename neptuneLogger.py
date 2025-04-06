@@ -20,10 +20,15 @@ class NeptuneLogger:
         self.run["parameters"] = config # Log the configuration parameters as metadata
 
 
-    def log_metrics(self, metrics: dict, step: int = None, prefix: str = ""):
-        for key, value in metrics.items():
-            tag = f"{prefix}/{key}" if prefix else key
-            self.run[tag].log(value, step=step)
+    def log_metrics(self, metrics: dict, step: int = None, prefix: str = None):
+        if prefix:
+            # Log the entire dictionary under the specified prefix.
+            # This creates a single metric "loss" with subkeys for different series.
+            self.run[prefix].log(metrics, step=step)
+        else:
+            # If no prefix is provided, log each metric individually.
+            for key, value in metrics.items():
+                self.run[key].log(value, step=step)
 
 
     def log_images(self, x, recon_x, step):
@@ -47,6 +52,9 @@ class NeptuneLogger:
         plt.close(fig)
 
         self.run[f"visuals/comparison_epoke_{step}"] = neptune.types.File.from_content(buf.getvalue(), extension="png")
+    
+    def stop(self):
+        self.run.stop()
     
 
 
