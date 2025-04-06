@@ -43,13 +43,13 @@ def train(config, logger, train_loader, val_loader):
             optimizer.step()
             
             global_step = epoch * len(train_loader) + batch_idx
-            logger.log_metrics({"loss": loss.item()}, step=global_step, prefix="train")
+            logger.log_metrics({"train": loss.item()}, step=global_step, prefix="loss")
 
         # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
         # Log the average val loss for the epoch
         val_loss = validate(model, logger, val_loader, device, global_step=(epoch + 1) * len(train_loader))
-        logger.log_metrics({"loss": val_loss}, step=global_step, prefix="val")
+        logger.log_metrics({"val": val_loss}, step=global_step, prefix="loss")
     
     logger.stop()
 
