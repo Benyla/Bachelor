@@ -5,6 +5,8 @@ import random
 from torchvision.transforms.functional import to_pil_image
 import matplotlib.pyplot as plt
 from io import BytesIO
+from dotenv import load_dotenv
+load_dotenv()
 
 class NeptuneLogger:
     def __init__(self, config):

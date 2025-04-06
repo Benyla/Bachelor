@@ -21,6 +21,5 @@
 
 # your training script here, e.g.
 # activate environment ...
-source ~/.neptune_env
 source .venv/bin/activate
 python src/train.py --config config3.yaml
