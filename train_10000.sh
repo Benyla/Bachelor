@@ -12,8 +12,8 @@
 #BSUB -gpu "num=1:mode=exclusive_process"
 #BSUB -W 24:00
 
-# at least 32 GB RAM
-#BSUB -R "rusage[mem=32GB]"
+# at least 16 GB RAM
+#BSUB -R "rusage[mem=16GB]"
 
 # stdout/stderr files for debugging (%J is substituted for job ID)
 #BSUB -o logs/my_run_%J.out
