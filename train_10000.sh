@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # A100 GPU queue, there is also gpua40 and gpua10
-#BSUB -q gpua10
+#BSUB -q hpc
 
 # job name
 #BSUB -J job_name_goes_here
@@ -21,5 +21,6 @@
 
 # your training script here, e.g.
 # activate environment ...
+source ~/.neptune_env
 source .venv/bin/activate
 python src/train.py --config config3.yaml
