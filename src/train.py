@@ -43,12 +43,13 @@ def train(config, logger, train_loader, val_loader):
             optimizer.step()
             
             global_step = epoch * len(train_loader) + batch_idx
-            logger.log_loss(loss.item(), step=global_step, kind="batch")
+            logger.log_metrics({"loss": loss.item()}, step=global_step, prefix="train")
 
         # Log the original and reconstructed images as a combined figure
         logger.log_images(x, recon_x, step=epoch)
         # Log the average val loss for the epoch
-        validate(model, logger, val_loader, device, global_step=(epoch + 1) * len(train_loader))
+        val_loss = validate(model, logger, val_loader, device, global_step=(epoch + 1) * len(train_loader))
+        logger.log_metrics({"loss": val_loss}, step=global_step, prefix="val")
     
     logger.stop()
 
@@ -70,6 +71,7 @@ def main():
     val_dataset = SingleCellDataset(val_files)
     if config["data"]["test"] == True:
         train_dataset = Subset(train_dataset, list(range(10000)))
+        val_dataset = Subset(val_dataset, list(range(1000)))
         print('Training on subset of images (testing)')
         print(f"Subset size: {len(train_dataset)}")
 
