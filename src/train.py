@@ -70,8 +70,8 @@ def main():
     train_dataset = SingleCellDataset(train_files)
     val_dataset = SingleCellDataset(val_files)
     if config["data"]["test"] == True:
-        train_dataset = Subset(train_dataset, list(range(1000)))
-        val_dataset = Subset(val_dataset, list(range(100)))
+        train_dataset = Subset(train_dataset, list(range(2560)))
+        val_dataset = Subset(val_dataset, list(range(256)))
         print('Training on subset of images (testing)')
         print(f"Subset size: {len(train_dataset)}")
 
