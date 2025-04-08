@@ -14,7 +14,7 @@ def load_latest_model(model_dir, device):
     Searches the specified directory for model checkpoint files (*.pt) and returns
     the full path of the file with the latest modification time.
     """
-    model_files = [f for f in os.listdir(model_dir) if f.endswith('.pt')]
+    model_files = [f for f in os.listdir(model_dir) if f.endswith('.pth')]
     if not model_files:
         raise FileNotFoundError(f"No model checkpoint files found in {model_dir}.")
     # Select the latest file based on modification time
