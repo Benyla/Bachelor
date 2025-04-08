@@ -1,12 +1,13 @@
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Import your VAE model (ensure your PYTHONPATH is set correctly or adjust sys.path)
-from models.VAE import VAE
+from src.models.VAE import VAE
 
 def load_latest_model(model_dir, device):
     """
