@@ -123,4 +123,17 @@ class VAE(nn.Module):
         
         return recon_loss, kl_loss
 
+    def decode(self, z):
+        """
+        Decodes a latent vector z into an image.
+        
+        Args:
+            z (Tensor): The latent code tensor.
+            
+        Returns:
+            Tensor: The reconstructed image tensor.
+        """
+        decoder_input = self.decoder_input(z)
+        x_recon = self.decoder(decoder_input)
+        return x_recon
 
