@@ -54,14 +54,8 @@ def plot_generated_samples(samples, num_rows, num_cols, save_path="generated_sam
     for idx in range(num_samples):
         ax = axes[0][idx] if num_rows == 1 else axes[idx // num_cols][idx % num_cols]
         img = samples[idx]
-        # If the image has 1 channel, squeeze it for grayscale plotting
-        if img.shape[0] == 1:
-            img = img.squeeze(0)
-            ax.imshow(img, cmap="gray")
-        else:
-            # If image has 3 channels (RGB), re-order axes
-            img = np.transpose(img, (1, 2, 0))
-            ax.imshow(img)
+        img = np.transpose(img, (1, 2, 0))
+        ax.imshow(img)
         ax.axis("off")
     
     plt.tight_layout()
@@ -71,7 +65,7 @@ def plot_generated_samples(samples, num_rows, num_cols, save_path="generated_sam
 def main():
     # Configuration parameters (adjust these if necessary)
     model_dir = "trained_models"
-    in_channels = 1       # e.g., number of channels in your cell images
+    in_channels = 3       # e.g., number of channels in your cell images
     latent_dim = 64       # must match what you used in training
     num_samples = 8       # number of random samples to generate
 
