@@ -66,7 +66,7 @@ def main():
     # Configuration parameters (adjust these if necessary)
     model_dir = "trained_models"
     in_channels = 3       # e.g., number of channels in your cell images
-    latent_dim = 64       # must match what you used in training
+    latent_dim = 150       # must match what you used in training
     num_samples = 8       # number of random samples to generate
 
     # Set device for computation
