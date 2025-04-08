@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Import your VAE model (ensure your PYTHONPATH is set correctly or adjust sys.path)
-from src.models.VAE import VAE
+from models.VAE import VAE
 
 def load_latest_model(model_dir, device):
     """
