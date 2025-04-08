@@ -121,6 +121,6 @@ class VAE(nn.Module):
         # Average the log likelihood over all samples and take the negative for loss
         recon_loss = -torch.mean(torch.stack(recon_loss_samples))
         
-        return recon_loss + kl_loss
+        return recon_loss, kl_loss
 
 

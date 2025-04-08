@@ -46,21 +46,30 @@ def train(config, logger, train_loader, val_loader):
         start_time = time.time()
         model.train()
         train_loss_total = 0.0
+        recon_loss_total = 0.0
+        kl_loss_total = 0.0
         
         for batch_idx, (batch, ids) in enumerate(train_loader):
             x = batch.to(device)
             optimizer.zero_grad()
             recon_x, mu, logvar = model(x)
-            loss = model.loss(x, mu, logvar)
+            recon_loss, kl_loss = model.loss(x, mu, logvar)
+            loss = recon_loss + kl_loss
             loss.backward()
             optimizer.step()
 
             train_loss_total += loss.item()
+            recon_loss_total += recon_loss.item()
+            kl_loss_total += kl_loss.item()
         
         avg_train_loss = train_loss_total / (len(train_loader)*config["training"]["batch_size"])
-        avg_val_loss = validate(model, val_loader, device, config=config)
+        avg_recon_loss = recon_loss_total / (len(train_loader)*config["training"]["batch_size"])
+        avg_kl_loss = kl_loss_total / (len(train_loader)*config["training"]["batch_size"])
 
-        logger.log_metrics({"train": avg_train_loss, "val": avg_val_loss}, step=epoch, prefix="loss")
+        avg_val_loss, average_recon_loss, average_kl_loss = validate(model, val_loader, device, config=config)
+
+        logger.log_metrics({"train": avg_train_loss, "recon_loss": avg_recon_loss, "kl_loss": avg_kl_loss}, step=epoch, prefix="loss")
+        logger.log_metrics({"val": avg_val_loss, "recon_loss": average_recon_loss, "kl_loss": average_kl_loss}, step=epoch, prefix="val_loss")
         logger.log_images(x, recon_x, step=epoch)
 
         scheduler.step(avg_val_loss)
