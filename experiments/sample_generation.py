@@ -1,6 +1,6 @@
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
 from models.VAE import VAE
 
 
@@ -64,7 +64,7 @@ def plot_generated_samples(samples, num_rows, num_cols, save_path="generated_sam
 
 def main():
     # Configuration parameters (adjust these if necessary)
-    root_dir = os.path.dirname(os.path.dirname("Bachelor/"))
+    root_dir = os.path.dirname(os.path.dirname(__file__))
     model_dir = os.path.join(root_dir, "trained_models")
     in_channels = 3       # e.g., number of channels in your cell images
     latent_dim = 150       # must match what you used in training

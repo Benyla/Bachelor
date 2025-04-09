@@ -36,8 +36,7 @@ def train(config, logger, train_loader, val_loader):
         optimizer,
         mode="min",
         factor=config["training"].get("lr_scheduler_factor", 0.1),
-        patience=config["training"].get("lr_scheduler_patience", 3),
-        verbose=True
+        patience=config["training"].get("lr_scheduler_patience", 3)
     )
 
     num_epochs = config["training"]["epochs"]
@@ -73,7 +72,7 @@ def train(config, logger, train_loader, val_loader):
         logger.log_images(x, recon_x, step=epoch)
 
         scheduler.step(avg_val_loss)
-        current_lr = optimizer.param_groups[0]['lr']
+        current_lr = scheduler.get_last_lr()[0]  # returns a list; get the first (and usually only) value
         logger.log_metrics({"learning_rate": current_lr}, step=epoch)
 
         logger.log_time({"epoch_time": time.time() - start_time}, step=epoch)
