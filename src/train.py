@@ -65,7 +65,7 @@ def train(config, logger, train_loader, val_loader):
         avg_recon_loss = recon_loss_total / (len(train_loader)*config["training"]["batch_size"])
         avg_kl_loss = kl_loss_total / (len(train_loader)*config["training"]["batch_size"])
 
-        avg_val_loss, average_recon_loss, average_kl_loss = validate(model, val_loader, device, config=config)
+        avg_val_loss, average_recon_loss, average_kl_loss = validate(model, val_loader, device, config=config, epoch=epoch)
 
         logger.log_metrics({"train": avg_train_loss, "recon_loss": avg_recon_loss, "kl_loss": avg_kl_loss}, step=epoch, prefix="loss")
         logger.log_metrics({"val": avg_val_loss, "recon_loss": average_recon_loss, "kl_loss": average_kl_loss}, step=epoch, prefix="val_loss")
