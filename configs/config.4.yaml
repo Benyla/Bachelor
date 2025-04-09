@@ -1,0 +1,18 @@
+# config.yaml
+
+experiment:
+  name: "cell_vae_experiment_full_data"
+  neptune_project: "benyla/Bachelor"
+  tags: "cell_vae -- full_data"
+
+training:
+  epochs: 50
+  batch_size: 256
+  learning_rate: 0.001
+
+model:
+  in_channels: 3
+  latent_dim: 150
+
+data:
+  test: False
