@@ -13,7 +13,7 @@ from data_works import get_data, SingleCellDataset
 from neptuneLogger import NeptuneLogger
 from torch.utils.data import Subset
 from evaluate import validate
-from utils import save_model
+from utils.save_model import save_model
 
 
 def load_config(config_path):
