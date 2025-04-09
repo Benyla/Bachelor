@@ -9,8 +9,8 @@ import torch.optim as optim
 from tqdm import tqdm
 from torch.utils.data import DataLoader
 from models.VAE import VAE
-from data_works import get_data, SingleCellDataset
-from neptuneLogger import NeptuneLogger
+from utils.data_loader import get_data, SingleCellDataset
+from utils.neptuneLogger import NeptuneLogger
 from torch.utils.data import Subset
 from evaluate import validate
 from utils.save_model import save_model
