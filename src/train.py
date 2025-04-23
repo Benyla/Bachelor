@@ -14,13 +14,7 @@ from utils.neptuneLogger import NeptuneLogger
 from torch.utils.data import Subset
 from evaluate import validate
 from utils.save_model import save_model
-
-
-def load_config(config_path):
-    with open(config_path, "r") as f:
-        config = yaml.safe_load(f)
-    return config
-
+from utils.config_loader import load_config
 
 def train(config, logger, train_loader, val_loader):
     # Initialize model and optimizer
