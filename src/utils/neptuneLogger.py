@@ -61,3 +61,18 @@ class NeptuneLogger:
     def stop(self):
         self.run.stop()
     
+    def log_latent_distribution(z_batch, epoch, save_path):
+        """
+        z_batch: Tensor [batch, z_dim]
+        """
+        # use matplotlib to histogram each latent dim (or e.g. corner plot/KDE)
+        # save fig to disk or return fig
+
+    def log_top_k_images_w_biggest_loss(inputs, reconstructions, losses, epoch, save_dir, k=3):
+        """
+        inputs: [batch, C, H, W]
+        losses: [batch] per-sample combined loss
+        """
+        # sort losses descending, pick top-k indices
+        # save or log those input / recon pairs
+    
