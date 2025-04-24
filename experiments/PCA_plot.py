@@ -1,4 +1,8 @@
+#!/usr/bin/env python3
+# File: experiments/PCA_sampled.py
+
 import argparse
+import os
 import yaml
 import torch
 import pandas as pd
@@ -6,13 +10,12 @@ from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data, SingleCellDataset
-from torch.utils.data import DataLoader
 from src.utils.config_loader import load_config
+from torch.utils.data import DataLoader
 
-def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
+def get_latent_and_metadata(config, val_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    # Load model architecture and weights
+    # load model
     model = VAE(
         in_channels=config["model"]["in_channels"],
         latent_dim=config["model"]["latent_dim"]
@@ -21,105 +24,118 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
 
-    # Collect latent codes and IDs
-    all_latents = []
-    all_ids = []
+    # collect latent means and IDs
+    all_mu, all_ids = [], []
     with torch.no_grad():
         for batch, ids in val_loader:
             batch = batch.to(device)
-            # Use the encoder to get the latent mean vector
             z, mu, logvar = model.encode(batch, return_stats=True)
-            all_latents.append(mu.cpu())
+            all_mu.append(mu.cpu())
             all_ids.extend(ids)
+    latents = torch.cat(all_mu, dim=0).numpy()  # (N, latent_dim)
 
-    latents = torch.cat(all_latents, dim=0).numpy()  # shape: (N_samples, latent_dim)
-    print(f"[DEBUG] Latent matrix shape for PCA: {latents.shape}")
-
-    # Load metadata and merge with latent codes
+    # load metadata
     meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
-    z_columns = [f"z{i}" for i in range(latents.shape[1])]
-    df_latent = pd.DataFrame(latents, columns=z_columns)
-    df_latent["Single_Cell_Image_Name"] = all_ids
+    meta["Single_Cell_Image_Name"] = (
+        meta["Single_Cell_Image_Name"].astype(str)
+            .str.replace(".npy", "", regex=False)
+    )
 
-    # Force both columns to be strings so merge works
-    df_latent["Single_Cell_Image_Name"] = df_latent["Single_Cell_Image_Name"].astype(str)
-    meta["Single_Cell_Image_Name"] = meta["Single_Cell_Image_Name"].astype(str).str.replace(".npy", "", regex=False)
-
-    pd.set_option('display.max_colwidth', None)
-
-    print("[DEBUG] df_latent['Single_Cell_Image_Name'] sample:")
-    print(df_latent["Single_Cell_Image_Name"].head(10))
-
-    print("[DEBUG] meta['Single_Cell_Image_Name'] sample:")
-    print(meta["Single_Cell_Image_Name"].head(10))
-
-
-    df = df_latent.merge(
+    # build dataframe
+    z_cols = [f"z{i}" for i in range(latents.shape[1])]
+    df = pd.DataFrame(latents, columns=z_cols)
+    df["Single_Cell_Image_Name"] = all_ids
+    df = df.merge(
         meta[["Single_Cell_Image_Name", "moa"]],
-        on="Single_Cell_Image_Name",
-        how="left"
+        on="Single_Cell_Image_Name", how="left"
     )
-    if df["moa"].isnull().any():
-        print("Warning: some IDs had no MOA in metadata.csv")
-    missing_moa_count = df["moa"].isnull().sum()
-    print(f"[DEBUG] Number of datapoints with missing MOA: {missing_moa_count}")
+    return df
 
-    # Run PCA down to 2 components
-    pca = PCA(n_components=2)
-    pcs = pca.fit_transform(df[z_columns])
-    df["PC1"] = pcs[:, 0]
-    df["PC2"] = pcs[:, 1]
+def subsample_equal(df, sample_size): # gets subsample of val_loader with equally distributed moa
+    df = df.dropna(subset=["moa"]).copy()
+    classes = df["moa"].unique()
+    n_classes = len(classes)
+    per_class = sample_size // n_classes
+    extras = sample_size - per_class * n_classes
 
-    # Plot scatter colored by MOA
-    moas = df["moa"].astype("category")
-    df["moa_code"] = moas.cat.codes
-    cmap = plt.get_cmap("tab20", len(moas.cat.categories))
-
-    plt.figure(figsize=(8, 6))
-    plt.scatter(
-        df["PC1"], df["PC2"],
-        c=df["moa_code"].to_numpy(),
-        cmap=cmap,
-        s=10, alpha=0.8
-    )
-    # Legend entries per MOA
-    handles = [
-        plt.Line2D([0], [0], marker="o", color="w",
-                   markerfacecolor=cmap(i), markersize=6)
-        for i in range(len(moas.cat.categories))
-    ]
-    plt.legend(handles, moas.cat.categories, title="MOA", bbox_to_anchor=(1, 1))
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
-    plt.title("2D PCA of latent space\ncolored by MOA")
-    plt.tight_layout()
-    plt.savefig("experiments/plots/PCA_plot.png")
-    plt.show()
-
+    subs = []
+    for i, moa in enumerate(classes):
+        n = per_class + (1 if i < extras else 0)
+        sub = df[df["moa"] == moa].sample(
+            n=min(n, len(df[df["moa"] == moa])),
+            random_state=42
+        )
+        subs.append(sub)
+    return pd.concat(subs).reset_index(drop=True)
 
 def main():
-    parser = argparse.ArgumentParser(description="Run PCA on VAE latent space and visualize by MOA.")
-    parser.add_argument("--config",       type=str, required=True, help="Path to YAML config file")
-    parser.add_argument("--model-path",   type=str, required=True, help="Path to trained model checkpoint (pth)")
+    parser = argparse.ArgumentParser(
+        description="PCA on a sampled subset of VAE latents, equal per MOA"
+    )
+    parser.add_argument("--config",       type=str, required=True,
+                        help="Path to YAML config")
+    parser.add_argument("--model-path",   type=str, required=True,
+                        help="Path to .pth checkpoint")
+    parser.add_argument("--sample-size",  type=int, default=None,
+                        help="Total points to sample (evenly by MOA). If not set, uses the full dataset.")
+    parser.add_argument("--output",       type=str, default="experiments/plots",
+                        help="Where to save the PCA plot")
     args = parser.parse_args()
 
-    # Load config and inject paths
+    # load config & inject
     config = load_config(args.config)
     config["model"]["checkpoint_path"] = args.model_path
 
-    # Prepare validation DataLoader
+    # prepare val_loader
     _, val_files, _ = get_data()
-    val_dataset = SingleCellDataset(val_files)
     val_loader = DataLoader(
-        val_dataset,
+        SingleCellDataset(val_files),
         batch_size=config["training"]["batch_size"],
-        shuffle=False,
-        drop_last=False
+        shuffle=False, drop_last=False
     )
 
-    # Execute PCA pipeline
-    get_latent_codes_and_run_PCA(config, val_loader)
+    # get full dataframe
+    df = get_latent_and_metadata(config, val_loader)
 
+    # optionally subsample equally by class if sample_size is provided
+    if args.sample_size is None:
+        df_sub = df
+        print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+    else:
+        df_sub = subsample_equal(df, args.sample_size)
+        print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+
+    # run PCA
+    z_cols = [c for c in df_sub.columns if c.startswith("z")]
+    pca = PCA(n_components=2, svd_solver="randomized")
+    pcs = pca.fit_transform(df_sub[z_cols])
+    df_sub["PC1"], df_sub["PC2"] = pcs[:,0], pcs[:,1]
+
+    # plot
+    moas = df_sub["moa"].astype("category")
+    df_sub["moa_code"] = moas.cat.codes
+    cmap = plt.get_cmap("tab20", len(moas.cat.categories))
+
+    plt.figure(figsize=(8,6))
+    plt.scatter(df_sub["PC1"], df_sub["PC2"],
+                c=df_sub["moa_code"].to_numpy(),
+                cmap=cmap, s=15, alpha=0.7)
+    handles = [
+        plt.Line2D([0],[0],marker="o",color="w",
+                   markerfacecolor=cmap(i),markersize=6)
+        for i in range(len(moas.cat.categories))
+    ]
+    plt.legend(handles, moas.cat.categories,
+               title="MOA", bbox_to_anchor=(1,1))
+    plt.xlabel("PC1"); plt.ylabel("PC2")
+    plt.title(f"PCA of {len(df_sub)} latent codes (even by MOA)")
+    os.makedirs(args.output, exist_ok=True)
+    suffix = f"{args.sample_size}" if args.sample_size is not None else "full_valset"
+    outpath = os.path.join(args.output, f"PCA_plot_{suffix}.png")
+    plt.tight_layout()
+    plt.savefig(outpath)
+    print(f"[INFO] Saved PCA plot to {outpath}")
+    plt.show()
 
 if __name__ == "__main__":
     main()
