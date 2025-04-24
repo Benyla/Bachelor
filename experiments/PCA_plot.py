@@ -7,6 +7,7 @@ import yaml
 import torch
 import pandas as pd
 from sklearn.decomposition import PCA
+from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data, SingleCellDataset
@@ -80,6 +81,10 @@ def main():
                         help="Total points to sample (evenly by MOA). If not set, uses the full dataset.")
     parser.add_argument("--output",       type=str, default="experiments/plots",
                         help="Where to save the PCA plot")
+    parser.add_argument(
+        "--mode", type=str, choices=["pca", "distance"], default="pca",
+        help="Select analysis mode: 'pca' for PCA plot or 'distance' for MOA distance matrix"
+    )
     args = parser.parse_args()
 
     # load config & inject
@@ -97,47 +102,82 @@ def main():
     # get full dataframe
     df = get_latent_and_metadata(config, val_loader)
 
-    # optionally subsample equally by class if sample_size is provided
-    if args.sample_size is None:
+    # prepare df_sub according to mode
+    if args.mode == "distance":
         df_sub = df
-        print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+        print(f"[INFO] Using full dataset for distance matrix: {len(df)} points across {df['moa'].nunique()} MOAs")
     else:
-        df_sub = subsample_equal(df, args.sample_size)
-        print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+        if args.sample_size is None:
+            df_sub = df
+            print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+        else:
+            df_sub = subsample_equal(df, args.sample_size)
+            print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
 
-    # run PCA
-    z_cols = [c for c in df_sub.columns if c.startswith("z")]
-    pca = PCA(n_components=2, svd_solver="randomized")
-    pcs = pca.fit_transform(df_sub[z_cols])
-    df_sub["PC1"], df_sub["PC2"] = pcs[:,0], pcs[:,1]
+    if args.mode == "distance":
+        # Compute MOA centroid distance matrix
+        print(f"[INFO] Computing distance matrix for {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+        latent_cols = [c for c in df_sub.columns if c.startswith("z")]
+        # Compute centroids per MOA
+        centroids = df_sub.groupby("moa")[latent_cols].mean()
+        # Compute pairwise Euclidean distances
+        dist_matrix = pd.DataFrame(
+            pairwise_distances(centroids, metric="euclidean"),
+            index=centroids.index, columns=centroids.index
+        )
+        # Plot heatmap
+        plt.figure(figsize=(10,8))
+        plt.imshow(dist_matrix, interpolation="nearest")
+        plt.colorbar(label="Euclidean distance")
+        plt.xticks(range(len(dist_matrix)), dist_matrix.columns, rotation=90)
+        plt.yticks(range(len(dist_matrix)), dist_matrix.index)
+        plt.title(f"MOA Distance Matrix ({len(df_sub)} samples)")
+        plt.tight_layout()
+        os.makedirs(args.output, exist_ok=True)
+        outpath = os.path.join(args.output, "MOA_distance_matrix.png")
+        plt.savefig(outpath)
+        print(f"[INFO] Saved distance matrix plot to {outpath}")
+        # Save matrix to CSV
+        matrix_csv = os.path.join(args.output, "MOA_distance_matrix.csv")
+        dist_matrix.to_csv(matrix_csv)
+        print(f"[INFO] Saved distance matrix to {matrix_csv}")
+        plt.show()
+        return
 
-    print("Explained variance ratios:", pca.explained_variance_ratio_[:2])
+    if args.mode == "pca":
+        # run PCA
+        z_cols = [c for c in df_sub.columns if c.startswith("z")]
+        pca = PCA(n_components=2, svd_solver="randomized")
+        pcs = pca.fit_transform(df_sub[z_cols])
+        df_sub["PC1"], df_sub["PC2"] = pcs[:,0], pcs[:,1]
 
-    # plot
-    moas = df_sub["moa"].astype("category")
-    df_sub["moa_code"] = moas.cat.codes
-    cmap = plt.get_cmap("tab20", len(moas.cat.categories))
+        print("Explained variance ratios:", pca.explained_variance_ratio_[:2])
 
-    plt.figure(figsize=(8,6))
-    plt.scatter(df_sub["PC1"], df_sub["PC2"],
-                c=df_sub["moa_code"].to_numpy(),
-                cmap=cmap, s=15, alpha=0.7)
-    handles = [
-        plt.Line2D([0],[0],marker="o",color="w",
-                   markerfacecolor=cmap(i),markersize=6)
-        for i in range(len(moas.cat.categories))
-    ]
-    plt.legend(handles, moas.cat.categories,
-               title="MOA", bbox_to_anchor=(1,1))
-    plt.xlabel("PC1"); plt.ylabel("PC2")
-    plt.title(f"PCA of {len(df_sub)} latent codes (even by MOA)")
-    os.makedirs(args.output, exist_ok=True)
-    suffix = f"{args.sample_size}" if args.sample_size is not None else "full_valset"
-    outpath = os.path.join(args.output, f"PCA_plot_{suffix}.png")
-    plt.tight_layout()
-    plt.savefig(outpath)
-    print(f"[INFO] Saved PCA plot to {outpath}")
-    plt.show()
+        # plot
+        moas = df_sub["moa"].astype("category")
+        df_sub["moa_code"] = moas.cat.codes
+        cmap = plt.get_cmap("tab20", len(moas.cat.categories))
+
+        plt.figure(figsize=(8,6))
+        plt.scatter(df_sub["PC1"], df_sub["PC2"],
+                    c=df_sub["moa_code"].to_numpy(),
+                    cmap=cmap, s=15, alpha=0.7)
+        handles = [
+            plt.Line2D([0],[0],marker="o",color="w",
+                       markerfacecolor=cmap(i),markersize=6)
+            for i in range(len(moas.cat.categories))
+        ]
+        plt.legend(handles, moas.cat.categories,
+                   title="MOA", bbox_to_anchor=(1,1))
+        plt.xlabel("PC1"); plt.ylabel("PC2")
+        plt.title(f"PCA of {len(df_sub)} latent codes (even by MOA)")
+        os.makedirs(args.output, exist_ok=True)
+        suffix = f"{args.sample_size}" if args.sample_size is not None else "full_valset"
+        outpath = os.path.join(args.output, f"PCA_plot_{suffix}.png")
+        plt.tight_layout()
+        plt.savefig(outpath)
+        print(f"[INFO] Saved PCA plot to {outpath}")
+        plt.show()
 
 if __name__ == "__main__":
     main()
