@@ -45,6 +45,8 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     df_latent["Single_Cell_Image_Name"] = df_latent["Single_Cell_Image_Name"].astype(str)
     meta["Single_Cell_Image_Name"] = meta["Single_Cell_Image_Name"].astype(str)
 
+    pd.set_option('display.max_colwidth', None)
+
     print("[DEBUG] df_latent['Single_Cell_Image_Name'] sample:")
     print(df_latent["Single_Cell_Image_Name"].head(10))
 
