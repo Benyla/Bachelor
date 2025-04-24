@@ -111,6 +111,8 @@ def main():
     pcs = pca.fit_transform(df_sub[z_cols])
     df_sub["PC1"], df_sub["PC2"] = pcs[:,0], pcs[:,1]
 
+    print("Explained variance ratios:", pca.explained_variance_ratio_[:2])
+
     # plot
     moas = df_sub["moa"].astype("category")
     df_sub["moa_code"] = moas.cat.codes

@@ -1,0 +1,3 @@
+For running PCA_plot.py:
+.yaml and .pth should match. Remove sample_size arg for complete val_loader set
+PYTHONPATH=$(pwd) python experiments/PCA_plot.py --config configs/config4.yaml --model-path trained_models/model_epoch_49.pth --sample-size 1000
