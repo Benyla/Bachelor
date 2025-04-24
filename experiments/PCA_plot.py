@@ -10,18 +10,6 @@ from torch.utils.data import DataLoader
 from src.utils.config_loader import load_config
 
 def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
-    """
-    Extract latent codes from the VAE for the validation set and run PCA + scatter plot colored by MOA.
-
-    Args:
-        config (dict): Configuration dict with keys:
-            - model.in_channels
-            - model.latent_dim
-            - model.checkpoint_path
-            - data.metadata_path
-            - training.batch_size (unused here)
-        val_loader (DataLoader): DataLoader for the validation dataset.
-    """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load model architecture and weights
@@ -39,7 +27,6 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     with torch.no_grad():
         for batch, ids in val_loader:
             batch = batch.to(device)
-            # Assume model.encoder returns a tensor [B, latent_dim]
             z = model.encoder(batch)
             all_latents.append(z.cpu())
             all_ids.extend(ids)
@@ -47,7 +34,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     latents = torch.cat(all_latents, dim=0).numpy()  # shape: (N_samples, latent_dim)
 
     # Load metadata and merge with latent codes
-    meta = pd.read_csv(config["data"]["metadata_path"])
+    meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
     z_columns = [f"z{i}" for i in range(latents.shape[1])]
     df_latent = pd.DataFrame(latents, columns=z_columns)
     df_latent["multi_cell_image_id"] = all_ids
@@ -89,6 +76,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     plt.ylabel("PC2")
     plt.title("2D PCA of latent space\ncolored by MOA")
     plt.tight_layout()
+    plt.savefig("PCA_plot.png")
     plt.show()
 
 
@@ -96,13 +84,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run PCA on VAE latent space and visualize by MOA.")
     parser.add_argument("--config",       type=str, required=True, help="Path to YAML config file")
     parser.add_argument("--model-path",   type=str, required=True, help="Path to trained model checkpoint (pth)")
-    parser.add_argument("--metadata-path",type=str, required=True, help="Path to metadata CSV file")
     args = parser.parse_args()
 
     # Load config and inject paths
     config = load_config(args.config)
     config["model"]["checkpoint_path"] = args.model_path
-    config.setdefault("data", {})["metadata_path"] = args.metadata_path
 
     # Prepare validation DataLoader
     _, val_files, _ = get_data()
