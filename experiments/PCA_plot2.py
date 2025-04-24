@@ -36,7 +36,7 @@ def get_latent_and_metadata(config, val_loader):
     latents = torch.cat(all_mu, dim=0).numpy()  # (N, latent_dim)
 
     # load metadata
-    meta = pd.read_csv(config["data"]["metadata_path"])
+    meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
     # strip .npy if present
     meta["Single_Cell_Image_Name"] = (
         meta["Single_Cell_Image_Name"].astype(str)
