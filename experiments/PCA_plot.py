@@ -43,7 +43,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
 
     # Force both columns to be strings so merge works
     df_latent["Single_Cell_Image_Name"] = df_latent["Single_Cell_Image_Name"].astype(str)
-    meta["Single_Cell_Image_Name"] = meta["Single_Cell_Image_Name"].astype(str)
+    meta["Single_Cell_Image_Name"] = meta["Single_Cell_Image_Name"].astype(str).str.replace(".npy", "", regex=False)
 
     pd.set_option('display.max_colwidth', None)
 
