@@ -39,6 +39,19 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     df_latent = pd.DataFrame(latents, columns=z_columns)
     df_latent["Multi_Cell_Image_Id"] = all_ids
 
+    print("\n[DEBUG] df_latent columns:", df_latent.columns.tolist())
+    print("[DEBUG] meta columns:", meta.columns.tolist())
+
+    print("\n[DEBUG] Sample df_latent['Multi_Cell_Image_Id'] values:")
+    print(df_latent["Multi_Cell_Image_Id"].head())
+
+    print("[DEBUG] df_latent['Multi_Cell_Image_Id'] dtype:", df_latent["Multi_Cell_Image_Id"].dtype)
+
+    print("\n[DEBUG] Sample meta['Multi_Cell_Image_Id'] values:")
+    print(meta["Multi_Cell_Image_Id"].head())
+
+    print("[DEBUG] meta['Multi_Cell_Image_Id'] dtype:", meta["Multi_Cell_Image_Id"].dtype)
+
     df = df_latent.merge(
         meta[["Multi_Cell_Image_Id", "moa"]],
         on="Multi_Cell_Image_Id",
