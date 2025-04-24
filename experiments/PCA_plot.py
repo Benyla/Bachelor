@@ -37,11 +37,11 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
     z_columns = [f"z{i}" for i in range(latents.shape[1])]
     df_latent = pd.DataFrame(latents, columns=z_columns)
-    df_latent["multi_cell_image_id"] = all_ids
+    df_latent["Multi_Cell_Image_Id"] = all_ids
 
     df = df_latent.merge(
-        meta[["multi_cell_image_id", "moa"]],
-        on="multi_cell_image_id",
+        meta[["Multi_Cell_Image_Id", "moa"]],
+        on="Multi_Cell_Image_Id",
         how="left"
     )
     if df["moa"].isnull().any():
