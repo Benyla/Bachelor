@@ -52,6 +52,8 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     )
     if df["moa"].isnull().any():
         print("Warning: some IDs had no MOA in metadata.csv")
+    missing_moa_count = df["moa"].isnull().sum()
+    print(f"[DEBUG] Number of datapoints with missing MOA: {missing_moa_count}")
 
     # Run PCA down to 2 components
     pca = PCA(n_components=2)
@@ -67,7 +69,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     plt.figure(figsize=(8, 6))
     plt.scatter(
         df["PC1"], df["PC2"],
-        c=df["moa_code"],
+        c=df["moa_code"].to_numpy(),
         cmap=cmap,
         s=10, alpha=0.8
     )
@@ -82,7 +84,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     plt.ylabel("PC2")
     plt.title("2D PCA of latent space\ncolored by MOA")
     plt.tight_layout()
-    plt.savefig("PCA_plot.png")
+    plt.savefig("experiments/plots/PCA_plot.png")
     plt.show()
 
 
