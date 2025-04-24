@@ -127,4 +127,13 @@ class VAE(nn.Module):
         decoder_input = self.decoder_input(z)
         x_recon = self.decoder(decoder_input)
         return x_recon
+    
+    def encode(self, x, return_stats=False):
+        encoded = self.encoder(x)
+        mu = self.fc_mu(encoded)
+        logvar = self.fc_logvar(encoded)
+        z = self.reparameterize(mu, logvar)
+        if return_stats:
+            return z, mu, logvar
+        return z
 

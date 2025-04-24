@@ -37,24 +37,15 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
     z_columns = [f"z{i}" for i in range(latents.shape[1])]
     df_latent = pd.DataFrame(latents, columns=z_columns)
-    df_latent["Multi_Cell_Image_Id"] = all_ids
+    df_latent["Multi_Cell_Image_Name"] = all_ids
 
-    print("\n[DEBUG] df_latent columns:", df_latent.columns.tolist())
-    print("[DEBUG] meta columns:", meta.columns.tolist())
-
-    print("\n[DEBUG] Sample df_latent['Multi_Cell_Image_Id'] values:")
-    print(df_latent["Multi_Cell_Image_Id"].head())
-
-    print("[DEBUG] df_latent['Multi_Cell_Image_Id'] dtype:", df_latent["Multi_Cell_Image_Id"].dtype)
-
-    print("\n[DEBUG] Sample meta['Multi_Cell_Image_Id'] values:")
-    print(meta["Multi_Cell_Image_Id"].head())
-
-    print("[DEBUG] meta['Multi_Cell_Image_Id'] dtype:", meta["Multi_Cell_Image_Id"].dtype)
+    # Force both columns to be strings so merge works
+    df_latent["Multi_Cell_Image_Name"] = df_latent["Multi_Cell_Image_Name"].astype(str)
+    meta["Multi_Cell_Image_Name"] = meta["Multi_Cell_Image_Name"].astype(str)
 
     df = df_latent.merge(
-        meta[["Multi_Cell_Image_Id", "moa"]],
-        on="Multi_Cell_Image_Id",
+        meta[["Multi_Cell_Image_Name", "moa"]],
+        on="Multi_Cell_Image_Name",
         how="left"
     )
     if df["moa"].isnull().any():
