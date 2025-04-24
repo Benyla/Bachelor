@@ -28,7 +28,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
         for batch, ids in val_loader:
             batch = batch.to(device)
             # Use the encoder to get the latent mean vector
-            mu, logvar = model.encode(batch)
+            z, mu, logvar = model.encode(batch)
             all_latents.append(mu.cpu())
             all_ids.extend(ids)
 
