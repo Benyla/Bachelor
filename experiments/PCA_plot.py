@@ -18,7 +18,7 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
         latent_dim=config["model"]["latent_dim"]
     ).to(device)
     ckpt = torch.load(config["model"]["checkpoint_path"], map_location=device)
-    model.load_state_dict(ckpt)
+    model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
 
     # Collect latent codes and IDs
