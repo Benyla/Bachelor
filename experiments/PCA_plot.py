@@ -27,11 +27,13 @@ def get_latent_codes_and_run_PCA(config: dict, val_loader: DataLoader):
     with torch.no_grad():
         for batch, ids in val_loader:
             batch = batch.to(device)
-            z = model.encoder(batch)
-            all_latents.append(z.cpu())
+            # Use the encoder to get the latent mean vector
+            mu, logvar = model.encode(batch)
+            all_latents.append(mu.cpu())
             all_ids.extend(ids)
 
     latents = torch.cat(all_latents, dim=0).numpy()  # shape: (N_samples, latent_dim)
+    print(f"[DEBUG] Latent matrix shape for PCA: {latents.shape}")
 
     # Load metadata and merge with latent codes
     meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
