@@ -11,7 +11,7 @@ import os
 import torch
 import torch.nn.functional as F
 import numpy as np
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import transforms
 
 import time
@@ -104,29 +104,42 @@ def main():
     ckpt = torch.load(args.model_path, map_location=device)
     vae.load_state_dict(ckpt['model_state_dict'])
 
-    # Prepare data loaders
-    _, val_files, _ = get_data()
-    real_dataset = SingleCellDataset(val_files)
-    real_loader = DataLoader(real_dataset, batch_size=args.batch_size,
-                             shuffle=False, drop_last=False)
-
-    # Determine sample count
-    # Extract real activations
     # Initialize InceptionV3 for pool3 features
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
     inception = InceptionV3([block_idx]).to(device)
 
-    print("[STEP] Computing real activations...")
-    t0 = time.time()
-    real_acts = get_activations(real_loader, inception, device)
-    print(f"[DONE] Real activations computed in {time.time() - t0:.1f}s")
-    num_real = real_acts.shape[0]
-    num_samples = args.num_samples or num_real
+    # Subset validation dataset and cache real activations
+    _, val_files, _ = get_data()
+    full_dataset = SingleCellDataset(val_files)
+    total = len(full_dataset)
+    num_samples = args.num_samples or total
 
-    # Subsample real if needed
-    if num_samples < num_real:
-        idx = np.random.choice(num_real, num_samples, replace=False)
-        real_acts = real_acts[idx]
+    if args.num_samples is None:
+        real_dataset = full_dataset
+    else:
+        # random but reproducible subset
+        np.random.seed(0)
+        indices = np.random.choice(total, num_samples, replace=False)
+        real_dataset = Subset(full_dataset, indices)
+
+    real_loader = DataLoader(real_dataset, batch_size=args.batch_size,
+                             shuffle=False, drop_last=False)
+
+    cache_dir = os.path.expanduser("~/.cache/bachelor_fid/")
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, "real_activations.npy")
+
+    if args.num_samples is None and os.path.exists(cache_file):
+        print(f"[INFO] Loading cached real activations from {cache_file}")
+        real_acts = np.load(cache_file)
+    else:
+        print("[STEP] Computing real activations...")
+        t0 = time.time()
+        real_acts = get_activations(real_loader, inception, device)
+        print(f"[DONE] Real activations computed in {time.time() - t0:.1f}s")
+        if args.num_samples is None:
+            np.save(cache_file, real_acts)
+            print(f"[INFO] Cached real activations to {cache_file}")
 
     print("[STEP] Generating images...")
     t1 = time.time()
