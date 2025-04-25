@@ -104,7 +104,14 @@ def main():
     # get full dataframe
     df = get_latent_and_metadata(config, val_loader)
 
-    # prepare df_sub according to mode
+    # prepare df_sub before mode check
+    if args.sample_size is None:
+        df_sub = df
+        print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+    else:
+        df_sub = subsample_equal(df, args.sample_size)
+        print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+
     if args.mode == "distance":
         # Compute MOA centroid distance matrix
         print(f"[INFO] Computing distance matrix for {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
@@ -169,13 +176,6 @@ def main():
         plt.show()
         return
 
-    else:
-        if args.sample_size is None:
-            df_sub = df
-            print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
-        else:
-            df_sub = subsample_equal(df, args.sample_size)
-            print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
 
     if args.mode == "pca":
         # run PCA
