@@ -4,7 +4,7 @@ Use mode for "pca" or "distance" (distance matrix) - sample_size arg can be igno
 PYTHONPATH=$(pwd) python experiments/PCA_and_distance.py --config configs/config4.yaml --model-path trained_models/model_epoch_49.pth --sample-size 1000 --mode "pca"
 
 For compute_fid.py:
-python compute_fid.py \
+PYTHONPATH=$(pwd) python experiments/compute_fid.py \
   --config configs/config4.yaml \
   --model-path trained_models/model_epoch_49.pth \
   --batch-size 32 \
