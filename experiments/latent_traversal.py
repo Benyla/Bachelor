@@ -29,7 +29,6 @@ def decode_batch(model, zs, device):
         recon = model.decode(zs)
     return recon.cpu().numpy()
 
-
 def plot_interpolation(images, output, prefix):
     """
     Plot a sequence of images in a row.
