@@ -95,7 +95,7 @@ def main():
 
     # interpolate
     alphas = np.linspace(0, 1, args.steps)
-    z_interp = np.array([(1-a)*z_ctrl + a*z_tgt for a in alphas])
+    z_interp = np.array([(1 - a) * z_ctrl + a * z_tgt for a in alphas], dtype=np.float32)
 
     # decode
     model = VAE(in_channels=config['model']['in_channels'], latent_dim=config['model']['latent_dim']).to(device)
