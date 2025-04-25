@@ -14,6 +14,9 @@ import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
 from torchvision import transforms
 
+import time
+from tqdm import tqdm
+
 from pytorch_fid.inception import InceptionV3
 from pytorch_fid.fid_score import calculate_frechet_distance
 
@@ -32,7 +35,7 @@ def get_activations(data_loader, model, device):
                                      std=[0.229, 0.224, 0.225])
 
     with torch.no_grad():
-        for batch in data_loader:
+        for batch in tqdm(data_loader, desc="Computing activations"):
             # unpack if needed
             if isinstance(batch, (list, tuple)):
                 batch = batch[0]
@@ -77,6 +80,11 @@ def generate_images(model, num_samples, latent_dim, device, batch_size):
 
 
 def main():
+    start_all = time.time()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"[INFO] Starting FID computation at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"[INFO] Using device: {device}")
+
     parser = argparse.ArgumentParser(description="Compute FID for VAE-generated vs real samples using pytorch-fid")
     parser.add_argument('--config', type=str, required=True, help='Path to YAML config')
     parser.add_argument('--model-path', type=str, required=True, help='Path to VAE checkpoint (.pth)')
@@ -85,8 +93,6 @@ def main():
                         help='Number of samples to use (both real and generated); defaults to full val set')
     parser.add_argument('--output', type=str, default='experiments/fid', help='Directory to save FID score')
     args = parser.parse_args()
-
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Load config and model
     config = load_config(args.config)
@@ -110,7 +116,10 @@ def main():
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
     inception = InceptionV3([block_idx]).to(device)
 
+    print("[STEP] Computing real activations...")
+    t0 = time.time()
     real_acts = get_activations(real_loader, inception, device)
+    print(f"[DONE] Real activations computed in {time.time() - t0:.1f}s")
     num_real = real_acts.shape[0]
     num_samples = args.num_samples or num_real
 
@@ -119,17 +128,26 @@ def main():
         idx = np.random.choice(num_real, num_samples, replace=False)
         real_acts = real_acts[idx]
 
-    # Generate images and activations for generated samples
+    print("[STEP] Generating images...")
+    t1 = time.time()
     gen_images = generate_images(vae, num_samples, config['model']['latent_dim'], device, args.batch_size)
+    print(f"[DONE] Generated {len(gen_images)} images in {time.time() - t1:.1f}s")
     gen_loader = DataLoader(TensorDataset(gen_images), batch_size=args.batch_size)
+
+    print("[STEP] Computing generated activations...")
+    t2 = time.time()
     gen_acts = get_activations(gen_loader, inception, device)
+    print(f"[DONE] Generated activations computed in {time.time() - t2:.1f}s")
 
     # Compute statistics
     mu_real, sigma_real = calculate_activation_statistics(real_acts)
     mu_gen, sigma_gen = calculate_activation_statistics(gen_acts)
 
-    # Compute FID
+    print("[STEP] Calculating FID...")
+    t3 = time.time()
     fid_value = calculate_frechet_distance(mu_real, sigma_real, mu_gen, sigma_gen)
+    print(f"[DONE] FID calculated in {time.time() - t3:.1f}s")
+    print(f"[ALL DONE] Total elapsed time: {time.time() - start_all:.1f}s")
 
     # Save and report
     os.makedirs(args.output, exist_ok=True)
