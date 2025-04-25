@@ -35,16 +35,16 @@ def plot_interpolation(images, output, prefix):
     images: numpy array (N, C, H, W)
     """
     n = len(images)
-    # assume C=1 or 3
-    if images.shape[1] == 1:
-        images = images.squeeze(1)
+    images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
     fig, axes = plt.subplots(1, n, figsize=(n*2, 2))
+
     for i in range(n):
         ax = axes[i]
         img = images[i]
-        ax.imshow(img, cmap='gray' if img.ndim==2 else None)
+        ax.imshow(img)  # <-- this line is now correct
         ax.axis('off')
         ax.set_title(f'{i+1}/{n}')
+
     os.makedirs(output, exist_ok=True)
     outpath = os.path.join(output, f'{prefix}_traversal.png')
     fig.tight_layout()
