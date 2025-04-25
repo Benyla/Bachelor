@@ -13,6 +13,8 @@ from src.models.VAE import VAE
 from src.utils.data_loader import get_data, SingleCellDataset
 from src.utils.config_loader import load_config
 from torch.utils.data import DataLoader
+from scipy.cluster.hierarchy import linkage, dendrogram
+import matplotlib.gridspec as gridspec
 
 def get_latent_and_metadata(config, val_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -104,17 +106,6 @@ def main():
 
     # prepare df_sub according to mode
     if args.mode == "distance":
-        df_sub = df
-        print(f"[INFO] Using full dataset for distance matrix: {len(df)} points across {df['moa'].nunique()} MOAs")
-    else:
-        if args.sample_size is None:
-            df_sub = df
-            print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
-        else:
-            df_sub = subsample_equal(df, args.sample_size)
-            print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
-
-    if args.mode == "distance":
         # Compute MOA centroid distance matrix
         print(f"[INFO] Computing distance matrix for {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
         latent_cols = [c for c in df_sub.columns if c.startswith("z")]
@@ -125,24 +116,66 @@ def main():
             pairwise_distances(centroids, metric="euclidean"),
             index=centroids.index, columns=centroids.index
         )
-        # Plot heatmap
-        plt.figure(figsize=(10,8))
-        plt.imshow(dist_matrix, interpolation="nearest")
-        plt.colorbar(label="Euclidean distance")
-        plt.xticks(range(len(dist_matrix)), dist_matrix.columns, rotation=90)
-        plt.yticks(range(len(dist_matrix)), dist_matrix.index)
-        plt.title(f"MOA Distance Matrix ({len(df_sub)} samples)")
-        plt.tight_layout()
+        # Hierarchical clustering to reorder matrix
+        Z = linkage(dist_matrix.values, method="average")
+        dendro = dendrogram(Z, no_plot=True)
+        order = dendro["leaves"]
+        dist_matrix = dist_matrix.iloc[order, order]
+        # PCA on centroids for scatter
+        cent_pca = PCA(n_components=2).fit_transform(centroids.values[order])
+
+        # Plot cluster heatmap + dendrogram + centroid scatter
+        fig = plt.figure(figsize=(16,8), dpi=300)
+        gs = gridspec.GridSpec(2, 3, width_ratios=[0.2, 1, 1], height_ratios=[0.2, 1], wspace=0.05, hspace=0.05)
+        ax_dendro_top = fig.add_subplot(gs[0,1])
+        ax_dendro_left = fig.add_subplot(gs[1,0])
+        ax_heat = fig.add_subplot(gs[1,1])
+        ax_scatter = fig.add_subplot(gs[:,2])
+
+        # Top dendrogram (no labels)
+        dendrogram(Z, ax=ax_dendro_top, orientation="top", no_labels=True, color_threshold=None)
+        ax_dendro_top.axis("off")
+
+        # Left dendrogram (no labels)
+        dendrogram(Z, ax=ax_dendro_left, orientation="right", no_labels=True, color_threshold=None)
+        ax_dendro_left.axis("off")
+
+        # Heatmap
+        im = ax_heat.imshow(dist_matrix.values, aspect="auto", origin="lower", cmap="viridis")
+        ax_heat.set_xticks(range(len(dist_matrix)))
+        ax_heat.set_xticklabels(dist_matrix.columns, rotation=90, fontsize=6)
+        ax_heat.set_yticks(range(len(dist_matrix)))
+        ax_heat.set_yticklabels(dist_matrix.index, fontsize=6)
+        ax_heat.set_title("MOA Distance Matrix (clustered)")
+
+        # Colorbar
+        cbar = fig.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04)
+        cbar.set_label("Euclidean distance", rotation=270, labelpad=15)
+
+        # Centroid PCA scatter
+        sc = ax_scatter.scatter(cent_pca[:,0], cent_pca[:,1], c=cent_pca[:,0], cmap="plasma", s=60)
+        for i, label in enumerate(dist_matrix.index):
+            ax_scatter.text(cent_pca[i,0], cent_pca[i,1], label, fontsize=6, ha="center", va="center")
+        ax_scatter.set_xlabel("PC1")
+        ax_scatter.set_ylabel("PC2")
+        ax_scatter.set_title("MOA Centroid PCA")
+
+        # Save figure
         os.makedirs(args.output, exist_ok=True)
-        outpath = os.path.join(args.output, "MOA_distance_matrix.png")
-        plt.savefig(outpath)
-        print(f"[INFO] Saved distance matrix plot to {outpath}")
-        # Save matrix to CSV
-        matrix_csv = os.path.join(args.output, "MOA_distance_matrix.csv")
-        dist_matrix.to_csv(matrix_csv)
-        print(f"[INFO] Saved distance matrix to {matrix_csv}")
+        outpath = os.path.join(args.output, "MOA_distance_matrix_clustered.png")
+        plt.tight_layout()
+        plt.savefig(outpath, dpi=300)
+        print(f"[INFO] Saved clustered distance figure to {outpath}")
         plt.show()
         return
+
+    else:
+        if args.sample_size is None:
+            df_sub = df
+            print(f"[INFO] Using full dataset: {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
+        else:
+            df_sub = subsample_equal(df, args.sample_size)
+            print(f"[INFO] Subsampled to {len(df_sub)} points across {df_sub['moa'].nunique()} MOAs")
 
     if args.mode == "pca":
         # run PCA
