@@ -16,46 +16,10 @@ from src.utils.config_loader import load_config
 from torch.utils.data import DataLoader
 from scipy.cluster.hierarchy import linkage, dendrogram
 import matplotlib.gridspec as gridspec
+from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 
 mpl.rcParams['font.family'] = 'serif'
 
-def get_latent_and_metadata(config, val_loader):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # load model
-    model = VAE(
-        in_channels=config["model"]["in_channels"],
-        latent_dim=config["model"]["latent_dim"]
-    ).to(device)
-    ckpt = torch.load(config["model"]["checkpoint_path"], map_location=device)
-    model.load_state_dict(ckpt["model_state_dict"])
-    model.eval()
-
-    # collect latent means and IDs
-    all_mu, all_ids = [], []
-    with torch.no_grad():
-        for batch, ids in val_loader:
-            batch = batch.to(device)
-            z, mu, logvar = model.encode(batch, return_stats=True)
-            all_mu.append(mu.cpu())
-            all_ids.extend(ids)
-    latents = torch.cat(all_mu, dim=0).numpy()  # (N, latent_dim)
-
-    # load metadata
-    meta = pd.read_csv("/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv")
-    meta["Single_Cell_Image_Name"] = (
-        meta["Single_Cell_Image_Name"].astype(str)
-            .str.replace(".npy", "", regex=False)
-    )
-
-    # build dataframe
-    z_cols = [f"z{i}" for i in range(latents.shape[1])]
-    df = pd.DataFrame(latents, columns=z_cols)
-    df["Single_Cell_Image_Name"] = all_ids
-    df = df.merge(
-        meta[["Single_Cell_Image_Name", "moa"]],
-        on="Single_Cell_Image_Name", how="left"
-    )
-    return df
 
 def subsample_equal(df, sample_size): # gets subsample of val_loader with equally distributed moa
     df = df.dropna(subset=["moa"]).copy()
