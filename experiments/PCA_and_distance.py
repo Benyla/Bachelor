@@ -9,12 +9,15 @@ import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data, SingleCellDataset
 from src.utils.config_loader import load_config
 from torch.utils.data import DataLoader
 from scipy.cluster.hierarchy import linkage, dendrogram
 import matplotlib.gridspec as gridspec
+
+mpl.rcParams['font.family'] = 'serif'
 
 def get_latent_and_metadata(config, val_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -131,21 +134,11 @@ def main():
         # PCA on centroids for scatter
         cent_pca = PCA(n_components=2).fit_transform(centroids.values[order])
 
-        # Plot cluster heatmap + dendrogram + centroid scatter
-        fig = plt.figure(figsize=(16,8), dpi=300)
-        gs = gridspec.GridSpec(2, 3, width_ratios=[0.2, 1, 1], height_ratios=[0.2, 1], wspace=0.05, hspace=0.05)
-        ax_dendro_top = fig.add_subplot(gs[0,1])
-        ax_dendro_left = fig.add_subplot(gs[1,0])
-        ax_heat = fig.add_subplot(gs[1,1])
-        ax_scatter = fig.add_subplot(gs[:,2])
-
-        # Top dendrogram (no labels)
-        dendrogram(Z, ax=ax_dendro_top, orientation="top", no_labels=True, color_threshold=None)
-        ax_dendro_top.axis("off")
-
-        # Left dendrogram (no labels)
-        dendrogram(Z, ax=ax_dendro_left, orientation="right", no_labels=True, color_threshold=None)
-        ax_dendro_left.axis("off")
+        # Plot heatmap + centroid scatter
+        fig = plt.figure(figsize=(16,8), dpi=300, constrained_layout=True)
+        gs = gridspec.GridSpec(1, 2, width_ratios=[1,1], wspace=0.4)
+        ax_heat = fig.add_subplot(gs[0])
+        ax_scatter = fig.add_subplot(gs[1])
 
         # Heatmap
         im = ax_heat.imshow(dist_matrix.values, aspect="auto", origin="lower", cmap="viridis")
@@ -158,6 +151,9 @@ def main():
         # Colorbar
         cbar = fig.colorbar(im, ax=ax_heat, fraction=0.046, pad=0.04)
         cbar.set_label("Euclidean distance", rotation=270, labelpad=15)
+        # Colorbar styling
+        cbar.outline.set_visible(True)
+        cbar.set_ticks([dist_matrix.values.min(), dist_matrix.values.max()])
 
         # Centroid PCA scatter
         sc = ax_scatter.scatter(cent_pca[:,0], cent_pca[:,1], c=cent_pca[:,0], cmap="plasma", s=60)
@@ -170,7 +166,6 @@ def main():
         # Save figure
         os.makedirs(args.output, exist_ok=True)
         outpath = os.path.join(args.output, "MOA_distance_matrix_clustered.png")
-        plt.tight_layout()
         plt.savefig(outpath, dpi=300)
         print(f"[INFO] Saved clustered distance figure to {outpath}")
         plt.show()
