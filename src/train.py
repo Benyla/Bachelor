@@ -41,6 +41,7 @@ def train(config, logger, train_loader, val_loader):
         train_loss_total = 0.0
         recon_loss_total = 0.0
         kl_loss_total = 0.0
+
         
         for batch_idx, (batch, ids) in enumerate(train_loader):
             x = batch.to(device)

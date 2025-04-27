@@ -85,42 +85,14 @@ class VAE(nn.Module):
         x_recon = self.decoder(decoder_input)
         return x_recon, mu, logvar
 
-    def loss(self, x, mu, logvar, num_samples=1, sigma=1.0):
-        """
-        Computes the VAE loss using a Gaussian likelihood for reconstruction,
-        with the option to sample more than one z.
-        
-        Args:
-            x (Tensor): Original input image.
-            mu (Tensor): Mean from the encoder's latent Gaussian.
-            logvar (Tensor): Log variance from the encoder's latent Gaussian.
-            num_samples (int): Number of samples to draw from q(z|x) (default is 1).
-            sigma (float): Standard deviation for the Gaussian likelihood.
-        
-        Returns:
-            Tensor: Total VAE loss.
-        """
-        # KL Divergence term (analytical solution for Gaussians)
+    def loss(self, x, mu, logvar, sigma=1.0):
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-
-        # Compute reconstruction loss over num_samples samples
-        recon_loss_samples = []
-        for _ in range(num_samples):
-            # Sample z and generate reconstruction for each sample
-            z = self.reparameterize(mu, logvar)
-            decoder_input = self.decoder_input(z)
-            recon_x = self.decoder(decoder_input)
-
-            # Create a Normal distribution with mean=recon_x and std=sigma
-            normal_dist = dist.Normal(recon_x, sigma)
-            # Compute log likelihood: log p(x|z)
-            log_px_given_z = normal_dist.log_prob(x)
-            # Sum over all elements (pixels) in x
-            recon_loss_samples.append(torch.sum(log_px_given_z))
-        
-        # Average the log likelihood over all samples and take the negative for loss
-        recon_loss = -torch.mean(torch.stack(recon_loss_samples))
-        
+        z = self.reparameterize(mu, logvar)
+        decoder_input = self.decoder_input(z)
+        recon_x = self.decoder(decoder_input)
+        normal_dist = dist.Normal(recon_x, sigma)
+        log_px_given_z = normal_dist.log_prob(x)
+        recon_loss = -torch.sum(log_px_given_z)
         return recon_loss, kl_loss
 
     def decode(self, z): # used in sample_generation.py when we have to decode a random z
