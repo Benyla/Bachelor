@@ -3,6 +3,30 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributions as dist
 
+class Discriminator(nn.Module):
+    def __init__(self, in_channels=3):
+        super().__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.LeakyReLU(0.2, inplace=True)
+        )
+        self.logit = nn.Conv2d(128, 1, 8)
+
+    def forward(self, x):
+        f1 = self.layer1(x)
+        f2 = self.layer2(f1)
+        f3 = self.layer3(f2)
+        out = self.logit(f3).view(-1)
+        return out, [f1, f2, f3]
+
 class VAE(nn.Module):
     """
     Variational Autoencoder (VAE) with a convolutional encoder and decoder.
@@ -11,10 +35,14 @@ class VAE(nn.Module):
         latent_dim (int): Dimensionality of the latent space.
         image_size (int): Height/width of the (square) input image.
     """
-    def __init__(self, in_channels=3, latent_dim=128):
+    def __init__(self, in_channels=3, latent_dim=128, use_adv: bool = False, beta: float = 1.0, T: int = 2500):
         super(VAE, self).__init__()
         self.in_channels = in_channels
         self.latent_dim = latent_dim
+        self.beta = beta
+        self.use_adv = use_adv
+        self.T = T
+        self.iter = 0
 
         # -----------------------
         # ENCODER
@@ -50,62 +78,59 @@ class VAE(nn.Module):
             nn.Sigmoid()  # Normalizes the output to [0, 1]
         )
 
+        if use_adv:
+            self.discriminator = Discriminator(in_channels)
+            self.register_buffer('real_label', torch.tensor(1.))
+            self.register_buffer('fake_label', torch.tensor(0.))
+
     def reparameterize(self, mu, logvar):
-        """
-        Applies the reparameterization trick to sample from the latent Gaussian.
-        Args:
-            mu (Tensor): Mean of the latent Gaussian.
-            logvar (Tensor): Log variance of the latent Gaussian.
-            
-        Returns:
-            Tensor: Sampled latent vector.
-        """
         std = torch.exp(0.5 * logvar) # Standard deviation from log variance
         eps = torch.randn_like(std) # Sample epsilon from standard normal with matching dim as std
         return mu + eps * std # Return reparameterized sample
 
     def forward(self, x):
-        """
-        Defines the forward pass of the VAE.
-        
-        Args:
-            x (Tensor): Input image tensor.
-        
-        Returns:
-            Tuple[Tensor, Tensor, Tensor]: Reconstructed image, mean, and log-variance.
-        """
-        # Encode the input image to a latent representation
-        encoded = self.encoder(x)
-        mu = self.fc_mu(encoded)
-        logvar = self.fc_logvar(encoded)
-        # Sample a latent vector using the reparameterization trick
+        x_enc = self.encoder(x)
+        mu, logvar = self.fc_mu(x_enc), self.fc_logvar(x_enc)
         z = self.reparameterize(mu, logvar)
-        # Decode the latent vector to reconstruct the image
-        decoder_input = self.decoder_input(z)
-        x_recon = self.decoder(decoder_input)
-        return x_recon, mu, logvar
+        x_rec = self.decoder(self.decoder_input(z))
+        return x_rec, mu, logvar
+
+    def _gamma(self, layer_idx: int):
+        t = float(self.iter) / float(self.T)
+        return float(torch.clamp(t - layer_idx, 0.0, 1.0))
 
     def loss(self, x, mu, logvar, sigma=1.0):
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         z = self.reparameterize(mu, logvar)
-        decoder_input = self.decoder_input(z)
-        recon_x = self.decoder(decoder_input)
-        normal_dist = dist.Normal(recon_x, sigma)
-        log_px_given_z = normal_dist.log_prob(x)
+        recon_x = self.decoder(self.decoder_input(z))
+        log_px_given_z = dist.Normal(recon_x, sigma).log_prob(x)
         recon_loss = -torch.sum(log_px_given_z)
-        return recon_loss, kl_loss
 
+        # VEA+ terms
+        adv_loss = 0.0
+        if self.use_adv:
+            x_rec = recon_x.detach()
+            real_logits, feats_real = self.discriminator(x)
+            fake_logits, feats_fake = self.discriminator(x_rec)
+            bce = F.binary_cross_entropy_with_logits
+            d_loss = bce(real_logits, self.real_label.expand_as(real_logits)) + \
+                     bce(fake_logits, self.fake_label.expand_as(fake_logits))
+
+            fm_losses = []
+            for i, (fr, ff) in enumerate(zip(feats_real, feats_fake)):
+                w = self._gamma(i)
+                fm_losses.append(w * F.mse_loss(ff, fr.detach()))
+            adv_loss = sum(fm_losses)
+            self.iter += 1
+        return recon_loss, kl_loss, adv_loss, (d_loss if self.use_adv else None)
+
+    
     def decode(self, z): # used in sample_generation.py when we have to decode a random z
-        decoder_input = self.decoder_input(z)
-        x_recon = self.decoder(decoder_input)
-        return x_recon
+        return self.decoder(self.decoder_input(z))
     
     def encode(self, x, return_stats=False):
-        encoded = self.encoder(x)
-        mu = self.fc_mu(encoded)
-        logvar = self.fc_logvar(encoded)
+        enc = self.encoder(x)
+        mu, logvar = self.fc_mu(enc), self.fc_logvar(enc)
         z = self.reparameterize(mu, logvar)
-        if return_stats:
-            return z, mu, logvar
-        return z
+        return (z, mu, logvar) if return_stats else z
 
