@@ -21,6 +21,6 @@ PYTHONPATH=$(pwd) python experiments/latent_traversal.py \
   --config configs/config4.yaml \
   --model-path trained_models/model_epoch_49.pth \
   --control-class DMSO \
-  --target-class DNA damage \
+  --target-class "DNA damage" \
   --steps 10 \
   --output experiments/plots
