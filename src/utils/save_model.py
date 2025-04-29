@@ -16,7 +16,13 @@ def save_model(logger, model, epoch, optimizer=None, config=None):
     if optimizer is not None:
         checkpoint["optimizer_state_dict"] = optimizer.state_dict()
 
-    save_path = os.path.join(save_dir, f"model_epoch_{epoch}.pth")
+    output_filename = (
+        f"VAE+_epoch_{epoch}.pth"
+        if config["model"].get("use_adv", False)
+        else f"VAE_epoch_{epoch}.pth"
+    )
+
+    save_path = os.path.join(save_dir, output_filename)
     torch.save(checkpoint, save_path)
         
     print(f"Checkpoint saved to {save_path}")
