@@ -42,7 +42,7 @@ def train(config, logger, train_loader, val_loader):
     
     batch_size = config["training"]["batch_size"]
 
-    
+
     # Training loop
     for epoch in range(config["training"]["epochs"]):
         start_time = time.time()
@@ -67,21 +67,27 @@ def train(config, logger, train_loader, val_loader):
             epoch_losses["total"] += loss.item()
             epoch_losses["recon"] += recon.item()
             epoch_losses["kl"] += kl.item()
-            epoch_losses["adv"] += adv.item()
+            epoch_losses["adv"] += adv.item() if isinstance(adv, torch.Tensor) else adv
         
         avg = lambda k: epoch_losses[k] / len(train_loader * batch_size)
         val_loss, val_recon, val_kl, val_adv = validate(model, val_loader, device, config=config, epoch=epoch)
 
-        logger.log_metrics({
+        log_dict = {
             "train/total": avg("total"),
             "train/recon": avg("recon"),
             "train/kl":    avg("kl"),
-            "train/adv":   avg("adv"),
             "val/total":   val_loss,
             "val/recon":   val_recon,
             "val/kl":      val_kl,
-            "val/adv":     val_adv,
-        }, step=epoch)
+        }
+        
+        if config["model"].get("use_adv", False):
+            log_dict.update({
+                "train/adv": avg("adv"),
+                "val/adv":   val_adv,
+            })
+
+        logger.log_metrics(log_dict, step=epoch)
 
         scheduler.step(val_loss)
         logger.log_metrics({"lr": scheduler._last_lr[0]}, step=epoch)
