@@ -3,8 +3,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 
 import yaml
 import torch
-import argparse
-import time
+import argparse, time
 import torch.optim as optim
 from tqdm import tqdm
 from torch.utils.data import DataLoader
@@ -21,59 +20,74 @@ def train(config, logger, train_loader, val_loader):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = VAE(
         in_channels=config["model"]["in_channels"],
-        latent_dim=config["model"]["latent_dim"]
+        latent_dim=config["model"]["latent_dim"],
+        use_adv = config["model"].get("use_adv", False),
+        beta = config["model"].get("beta", 1.0),
+        T = config["model"].get("T", 2500),
     ).to(device)
     
-    optimizer = optim.Adam(model.parameters(), lr=config["training"]["learning_rate"])
+    optimizer_VAE = optim.Adam(model.parameters(), lr=config["training"]["lr_VAE"])
+    if config["model"].get("use_adv", False):
+        optimizer_D = optim.Adam(
+            model.discriminator.parameters(),
+            lr=config["training"].get("lr_D", 0.001)
+        )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
+        optimizer_VAE,
         mode="min",
         factor=config["training"].get("lr_scheduler_factor", 0.1),
         patience=config["training"].get("lr_scheduler_patience", 3)
     )
-
-    num_epochs = config["training"]["epochs"]
     
-    for epoch in tqdm(range(num_epochs), desc="Training epochs"):
+    batch_size = config["training"]["batch_size"]
+
+    
+    # Training loop
+    for epoch in range(config["training"]["epochs"]):
         start_time = time.time()
         model.train()
-        train_loss_total = 0.0
-        recon_loss_total = 0.0
-        kl_loss_total = 0.0
+        epoch_losses = {"total":0, "recon":0, "kl":0, "adv":0}
 
-        
-        for batch_idx, (batch, ids) in enumerate(train_loader):
-            x = batch.to(device)
-            optimizer.zero_grad()
-            recon_x, mu, logvar = model(x)
-            recon_loss, kl_loss = model.loss(x, mu, logvar)
-            loss = recon_loss + kl_loss
+        for x, _ in tqdm(train_loader, desc=f"Epoch {epoch}", leave=False):
+            x = x.to(device)
+            x_rec, mu, logvar = model(x)
+            recon, kl, adv, d_loss = model.loss(x, mu, logvar)
+
+            if config["model"].get("use_adv", False):
+                optimizer_D.zero_grad()
+                d_loss.backward()
+                optimizer_D.step()
+            
+            loss = recon + model.beta*kl + adv # this will be just recon + kl if using normal VAE
+            optimizer_VAE.zero_grad()
             loss.backward()
-            optimizer.step()
+            optimizer_VAE.step()
 
-            train_loss_total += loss.item()
-            recon_loss_total += recon_loss.item()
-            kl_loss_total += kl_loss.item()
+            epoch_losses["total"] += loss.item()
+            epoch_losses["recon"] += recon.item()
+            epoch_losses["kl"] += kl.item()
+            epoch_losses["adv"] += adv.item()
         
-        avg_train_loss = train_loss_total / (len(train_loader)*config["training"]["batch_size"])
-        avg_recon_loss = recon_loss_total / (len(train_loader)*config["training"]["batch_size"])
-        avg_kl_loss = kl_loss_total / (len(train_loader)*config["training"]["batch_size"])
+        avg = lambda k: epoch_losses[k] / len(train_loader * batch_size)
+        val_loss, val_recon, val_kl, val_adv = validate(model, val_loader, device, config=config, epoch=epoch)
 
-        avg_val_loss, average_recon_loss, average_kl_loss = validate(model, val_loader, device, config=config, epoch=epoch)
+        logger.log_metrics({
+            "train/total": avg("total"),
+            "train/recon": avg("recon"),
+            "train/kl":    avg("kl"),
+            "train/adv":   avg("adv"),
+            "val/total":   val_loss,
+            "val/recon":   val_recon,
+            "val/kl":      val_kl,
+            "val/adv":     val_adv,
+        }, step=epoch)
 
-        logger.log_metrics({"train": avg_train_loss, "recon_loss": avg_recon_loss, "kl_loss": avg_kl_loss}, step=epoch, prefix="loss")
-        logger.log_metrics({"val": avg_val_loss, "recon_loss": average_recon_loss, "kl_loss": average_kl_loss}, step=epoch, prefix="val_loss")
-        logger.log_images(x, recon_x, step=epoch)
+        scheduler.step(val_loss)
+        logger.log_metrics({"lr": scheduler._last_lr[0]}, step=epoch)
+        logger.log_images(x, x_rec, step=epoch)
+        save_model(logger, model, epoch, optimizer=optimizer_VAE, config=config)
 
-        scheduler.step(avg_val_loss)
-        current_lr = scheduler.get_last_lr()[0]  # returns a list; get the first (and usually only) value
-        logger.log_metrics({"learning_rate": current_lr}, step=epoch)
-
-        logger.log_time({"epoch_time": time.time() - start_time}, step=epoch)
-
-        save_model(logger, model, epoch, optimizer=optimizer, config=config)
-    
     logger.stop()
 
 
@@ -81,11 +95,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True, help="Path to config file")
     args = parser.parse_args()
-    
-    # Load configuration from file
     config = load_config(args.config)
-    
-    # Initialize Neptune logger
     logger = NeptuneLogger(config)
     
     # Load data
@@ -104,9 +114,7 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True, drop_last=True) 
     val_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"], shuffle=False, drop_last=True)
     
-    # Start training
     train(config, logger, train_loader, val_loader)
-
 
 if __name__ == "__main__":
     main()
