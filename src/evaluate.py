@@ -24,8 +24,8 @@ def validate(model, val_loader, device, config=None, epoch=None):
             # Accumulate losses
             loss_acc["total"] += total.item()
             loss_acc["recon"] += recon.item()
-            loss_acc["kl"]    += kl.item()
-            loss_acc["adv"]   += adv.item()
+            loss_acc["kl"] += kl.item()
+            loss_acc["adv"] += adv.item() if isinstance(adv, torch.Tensor) else adv
 
             # Collect latent codes and IDs
             latents.append(mu.cpu())
