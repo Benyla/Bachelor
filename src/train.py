@@ -35,16 +35,12 @@ def train(config, logger, train_loader, val_loader):
     optimizer_VAE = optim.Adam(
         vae_params,
         lr=config["training"]["lr_VAE"],
-        betas=(0.9, 0.999),
-        weight_decay=1e-4
     )
 
     if config["model"].get("use_adv", False):
         optimizer_D = optim.SGD(
             model.discriminator.parameters(),
-            lr=config["training"].get("lr_D", 1e-2),
-            momentum=0.9,
-            weight_decay=1e-4
+            lr=config["training"]["lr_D"],
         )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(

@@ -11,22 +11,18 @@ class Discriminator(nn.Module):
         self.layers = nn.ModuleList([
             nn.Sequential(
                 nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2),
-                nn.BatchNorm2d(32),
                 nn.LeakyReLU(0.01)
             ),
             nn.Sequential(
                 nn.Conv2d(32, 64, kernel_size=5, stride=2, padding=2),
-                nn.BatchNorm2d(64),
                 nn.LeakyReLU(0.01)
             ),
             nn.Sequential(
                 nn.Conv2d(64, 128, kernel_size=5, stride=2, padding=2),
-                nn.BatchNorm2d(128),
                 nn.LeakyReLU(0.01)
             ),
             nn.Sequential(
                 nn.Conv2d(128, 256, kernel_size=5, stride=2, padding=2),
-                nn.BatchNorm2d(256),
                 nn.LeakyReLU(0.01)
             )
         ])
@@ -57,10 +53,10 @@ class VAE(nn.Module):
 
         # Encoder: 4 conv blocks → flatten
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2),  nn.BatchNorm2d(32),  nn.LeakyReLU(0.01),
-            nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2),  nn.BatchNorm2d(64),  nn.LeakyReLU(0.01),
-            nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2),  nn.BatchNorm2d(128),  nn.LeakyReLU(0.01),
-            nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2),  nn.BatchNorm2d(256),  nn.LeakyReLU(0.01),
+            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
             nn.Flatten()
         )
         self.fc_mu     = nn.Linear(256*4*4, latent_dim)
@@ -70,9 +66,9 @@ class VAE(nn.Module):
         self.decoder_input = nn.Linear(latent_dim, 256*4*4)
         self.decoder = nn.Sequential(
             nn.Unflatten(1, (256, 4, 4)),
-            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1),  nn.BatchNorm2d(128),  nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1),  nn.BatchNorm2d(64),   nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1),  nn.BatchNorm2d(32),   nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
             nn.ConvTranspose2d(32, in_channels, kernel_size=5, stride=2, padding=2, output_padding=1), nn.Sigmoid()
         )
 
