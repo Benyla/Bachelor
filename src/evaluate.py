@@ -18,7 +18,7 @@ def validate(model, val_loader, device, config=None, epoch=None):
         for x, ids in val_loader:
             x = x.to(device)
             x_rec, mu, logvar, z = model(x)
-            recon, kl, adv, _ = model.loss(x, mu, logvar)
+            recon, kl, adv, _ = model.loss(x, x_rec, mu, logvar)
             total = recon + model.beta * kl + adv
 
             # Accumulate losses
