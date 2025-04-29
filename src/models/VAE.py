@@ -107,7 +107,7 @@ class VAE(nn.Module):
         recon_loss = -torch.sum(log_px_given_z)
 
         # VEA+ terms
-        adv_loss = 0.0
+        adv_loss = torch.tensor(0.0, device=x.device)
         if self.use_adv:
             x_rec = recon_x.detach()
             real_logits, feats_real = self.discriminator(x)
@@ -133,4 +133,3 @@ class VAE(nn.Module):
         mu, logvar = self.fc_mu(enc), self.fc_logvar(enc)
         z = self.reparameterize(mu, logvar)
         return (z, mu, logvar) if return_stats else z
-
