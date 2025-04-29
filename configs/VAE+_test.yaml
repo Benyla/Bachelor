@@ -3,19 +3,19 @@
 metadata_csv: /zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv
 
 experiment:
-  name: "VEA+_test"
+  name: "VAE+_full_data"
   neptune_project: "benyla/Bachelor"
   tags: "cell_vae -- full_data"
 
 training:
-  epochs: 50
+  epochs: 20
   batch_size: 256
   lr_VAE: 0.001
-  lr_D: 0.001
+  lr_D: 0.01   # <- increased for SGD optimizer
 
 model:
   in_channels: 3
-  latent_dim: 150
+  latent_dim: 256  # <- match paper latent dimension
   use_adv: True
   beta: 2.0
   T: 2500

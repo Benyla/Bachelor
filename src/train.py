@@ -4,33 +4,47 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) 
 import yaml
 import torch
 import argparse, time
-import torch.optim as optim
 from tqdm import tqdm
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
+import torch.optim as optim
+
 from models.VAE import VAE
 from utils.data_loader import get_data, SingleCellDataset
 from utils.neptuneLogger import NeptuneLogger
-from torch.utils.data import Subset
 from evaluate import validate
 from utils.save_model import save_model
 from utils.config_loader import load_config
 
 def train(config, logger, train_loader, val_loader):
-    # Initialize model and optimizer
+    # Initialize device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = VAE(
         in_channels=config["model"]["in_channels"],
         latent_dim=config["model"]["latent_dim"],
-        use_adv = config["model"].get("use_adv", False),
-        beta = config["model"].get("beta", 1.0),
-        T = config["model"].get("T", 2500),
+        use_adv=config["model"].get("use_adv", False),
+        beta=config["model"].get("beta", 1.0),
+        T=config["model"].get("T", 2500),
     ).to(device)
-    
-    optimizer_VAE = optim.Adam(model.parameters(), lr=config["training"]["lr_VAE"])
+
+    # Separate parameters for VAE and Discriminator
+    vae_params = (
+        list(model.encoder.parameters()) +
+        list(model.fc_mu.parameters()) + list(model.fc_logvar.parameters()) +
+        list(model.decoder_input.parameters()) + list(model.decoder.parameters())
+    )
+    optimizer_VAE = optim.Adam(
+        vae_params,
+        lr=config["training"]["lr_VAE"],
+        betas=(0.9, 0.999),
+        weight_decay=1e-4
+    )
+
     if config["model"].get("use_adv", False):
-        optimizer_D = optim.Adam(
+        optimizer_D = optim.SGD(
             model.discriminator.parameters(),
-            lr=config["training"].get("lr_D", 0.001)
+            lr=config["training"].get("lr_D", 1e-2),
+            momentum=0.9,
+            weight_decay=1e-4
         )
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
@@ -39,9 +53,8 @@ def train(config, logger, train_loader, val_loader):
         factor=config["training"].get("lr_scheduler_factor", 0.1),
         patience=config["training"].get("lr_scheduler_patience", 3)
     )
-    
-    batch_size = config["training"]["batch_size"]
 
+    batch_size = config["training"]["batch_size"]
 
     # Training loop
     for epoch in range(config["training"]["epochs"]):
@@ -51,29 +64,37 @@ def train(config, logger, train_loader, val_loader):
 
         for x, _ in tqdm(train_loader, desc=f"Epoch {epoch}", leave=False):
             x = x.to(device)
-            x_rec, mu, logvar = model(x)
-            recon, kl, adv, d_loss = model.loss(x, mu, logvar)
 
+            # Forward & single sample
+            x_rec, mu, logvar, _ = model(x)
+
+            # ----- Discriminator update -----
             if config["model"].get("use_adv", False):
                 optimizer_D.zero_grad()
-                d_loss.backward(retain_graph=True)
-            
-            loss = recon + model.beta*kl + adv # this will be just recon + kl if using normal VAE
+                # Only classification loss
+                _, _, _, d_loss = model.loss(x, x_rec, mu, logvar)
+                d_loss.backward()
+                optimizer_D.step()
+
+            # ----- VAE update -----
+            recon, kl, adv_fm_loss, _ = model.loss(x, x_rec, mu, logvar)
+            loss = recon + model.beta * kl + adv_fm_loss
+
             optimizer_VAE.zero_grad()
             loss.backward()
             optimizer_VAE.step()
 
-            if config["model"].get("use_adv", False):
-                optimizer_D.step()
-
+            # Track losses
             epoch_losses["total"] += loss.item()
             epoch_losses["recon"] += recon.item()
-            epoch_losses["kl"] += kl.item()
-            epoch_losses["adv"] += adv.item() if isinstance(adv, torch.Tensor) else adv
-        
+            epoch_losses["kl"]    += kl.item()
+            epoch_losses["adv"]   += (adv_fm_loss.item() if isinstance(adv_fm_loss, torch.Tensor) else adv_fm_loss)
+
+        # Compute averages
         avg = lambda k: epoch_losses[k] / (len(train_loader) * batch_size)
         val_loss, val_recon, val_kl, val_adv = validate(model, val_loader, device, config=config, epoch=epoch)
 
+        # Log metrics
         log_dict = {
             "train/total": avg("total"),
             "train/recon": avg("recon"),
@@ -82,15 +103,10 @@ def train(config, logger, train_loader, val_loader):
             "val/recon":   val_recon,
             "val/kl":      val_kl,
         }
-
         if config["model"].get("use_adv", False):
-            log_dict.update({
-                "train/adv": avg("adv"),
-                "val/adv":   val_adv,
-            })
+            log_dict.update({"train/adv": avg("adv"), "val/adv": val_adv})
 
         logger.log_metrics(log_dict, step=epoch)
-
         scheduler.step(val_loss)
         logger.log_metrics({"lr": scheduler._last_lr[0]}, step=epoch)
         logger.log_images(x, x_rec, step=epoch)
@@ -105,25 +121,26 @@ def main():
     args = parser.parse_args()
     config = load_config(args.config)
     logger = NeptuneLogger(config)
-    
+
     # Load data
     train_files, val_files, test_files = get_data()
     train_dataset = SingleCellDataset(train_files)
-    val_dataset = SingleCellDataset(val_files)
+    val_dataset   = SingleCellDataset(val_files)
 
-    if config["data"]["test"] == True:
+    if config["data"]["test"]:
         train_dataset = Subset(train_dataset, list(range(2560)))
-        val_dataset = Subset(val_dataset, list(range(256)))
+        val_dataset   = Subset(val_dataset,   list(range(256)))
         print('Training on subset of images (testing)')
         print(f"Subset size: {len(train_dataset)}")
 
+    train_loader = DataLoader(train_dataset,
+                              batch_size=config["training"]["batch_size"],
+                              shuffle=True, drop_last=True)
+    val_loader   = DataLoader(val_dataset,
+                              batch_size=config["training"]["batch_size"],
+                              shuffle=False, drop_last=True)
 
-    # drop_last=True ensures that the last incomplete batch is dropped (caused problems with loss visualization)
-    train_loader = DataLoader(train_dataset, batch_size=config["training"]["batch_size"], shuffle=True, drop_last=True) 
-    val_loader = DataLoader(val_dataset, batch_size=config["training"]["batch_size"], shuffle=False, drop_last=True)
-    
     train(config, logger, train_loader, val_loader)
 
 if __name__ == "__main__":
     main()
-

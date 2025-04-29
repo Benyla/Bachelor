@@ -14,7 +14,7 @@ training:
 
 model:
   in_channels: 3
-  latent_dim: 150
+  latent_dim: 256
 
 data:
   test: True
