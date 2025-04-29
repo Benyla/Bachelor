@@ -69,7 +69,7 @@ def train(config, logger, train_loader, val_loader):
             epoch_losses["kl"] += kl.item()
             epoch_losses["adv"] += adv.item() if isinstance(adv, torch.Tensor) else adv
         
-        avg = lambda k: epoch_losses[k] / len(train_loader * batch_size)
+        avg = lambda k: epoch_losses[k] / (len(train_loader) * batch_size)
         val_loss, val_recon, val_kl, val_adv = validate(model, val_loader, device, config=config, epoch=epoch)
 
         log_dict = {
@@ -80,7 +80,7 @@ def train(config, logger, train_loader, val_loader):
             "val/recon":   val_recon,
             "val/kl":      val_kl,
         }
-        
+
         if config["model"].get("use_adv", False):
             log_dict.update({
                 "train/adv": avg("adv"),
