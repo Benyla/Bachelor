@@ -3,7 +3,7 @@
 metadata_csv: /zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv
 
 experiment:
-  name: "cell_vae_experiment_full_data"
+  name: "VAE_test"
   neptune_project: "benyla/Bachelor"
   tags: "cell_vae -- full_data"
 
