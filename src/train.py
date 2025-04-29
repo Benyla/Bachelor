@@ -56,7 +56,7 @@ def train(config, logger, train_loader, val_loader):
 
             if config["model"].get("use_adv", False):
                 optimizer_D.zero_grad()
-                d_loss.backward()
+                d_loss.backward(retain_graph=True)
                 optimizer_D.step()
             
             loss = recon + model.beta*kl + adv # this will be just recon + kl if using normal VAE
