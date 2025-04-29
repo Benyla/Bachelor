@@ -113,9 +113,9 @@ class VAE(nn.Module):
     def loss(self, x, x_rec, mu, logvar, sigma=1.0):
         # --- ELBO terms ---
         # 1) Recon loss via Gaussian log-likelihood
-        #log_px = dist.Normal(x_rec, sigma).log_prob(x)
-        #recon_loss = -torch.sum(log_px)
-        recon_loss = F.mse_loss(x_rec, x, reduction='sum')
+        log_px = dist.Normal(x_rec, sigma).log_prob(x)
+        recon_loss = -torch.sum(log_px)
+        #recon_loss = F.mse_loss(x_rec, x, reduction='sum')
         # 2) KL divergence
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
