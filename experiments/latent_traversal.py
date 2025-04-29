@@ -79,7 +79,7 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # get all latents and metadata
-    df = get_latent_and_metadata(config, val_loader, device)
+    df = get_latent_and_metadata(config, 49)
 
     # select control latent (first of control class)
     ctrl_df = df[df['moa'] == args.control_class]

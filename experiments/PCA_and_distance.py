@@ -69,7 +69,7 @@ def main():
     )
 
     # get full dataframe
-    df = get_latent_and_metadata(config, val_loader)
+    df = get_latent_and_metadata(config, 49)
 
     # prepare df_sub before mode check
     if args.sample_size is None:
