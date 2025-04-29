@@ -15,6 +15,7 @@ training:
 model:
   in_channels: 3
   latent_dim: 256
+  overfit: False
 
 data:
   test: False

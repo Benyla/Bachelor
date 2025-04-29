@@ -11,7 +11,7 @@ training:
   epochs: 500
   batch_size: 8
   lr_VAE: 0.001
-  lr_D: 0.001 
+  lr_D: 0.001
 
 model:
   in_channels: 3
@@ -19,6 +19,7 @@ model:
   use_adv: True
   beta: 0.001
   T: 2500
+  overfit: True 
 
 data:
   test: True

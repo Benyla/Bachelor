@@ -24,6 +24,7 @@ def train(config, logger, train_loader, val_loader):
         use_adv=config["model"].get("use_adv", False),
         beta=config["model"].get("beta", 1.0),
         T=config["model"].get("T", 2500),
+        overfit=config["model"].get("overfit", False)
     ).to(device)
 
     # Separate parameters for VAE and Discriminator

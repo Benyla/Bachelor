@@ -19,6 +19,7 @@ model:
   use_adv: True
   beta: 2.0
   T: 2500
+  overfit: False
 
 data:
   test: False

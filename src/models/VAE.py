@@ -44,12 +44,15 @@ class VAE(nn.Module):
                  latent_dim=256,
                  beta=2.0,
                  T=2500,
-                 use_adv=True):
+                 use_adv=True,
+                 overfit=False):
         super().__init__()
         self.beta = beta
         self.T = T
         self.iter = 0
         self.use_adv = use_adv
+        self.overfit = overfit
+        print(f"[Model Init] use_adv={self.use_adv}, overfit={self.overfit}")
 
         # Encoder: 4 conv blocks → flatten
         self.encoder = nn.Sequential(
@@ -83,10 +86,16 @@ class VAE(nn.Module):
         eps = torch.randn_like(std)
         return mu + eps * std
 
+    def overfit_reparameterize(self, mu, logvar):
+        return mu
+
     def encode(self, x):
         enc = self.encoder(x)
         mu, logvar = self.fc_mu(enc), self.fc_logvar(enc)
-        z = self.reparameterize(mu, logvar)
+        if self.overfit:
+            z = self.overfit_reparameterize(mu, logvar)
+        else:
+            z = self.reparameterize(mu, logvar)
         return z, mu, logvar
 
     def decode(self, z):
