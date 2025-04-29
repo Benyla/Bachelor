@@ -8,13 +8,13 @@ experiment:
   tags: "cell_vae -- full_data"
 
 training:
-  epochs: 20
-  batch_size: 256
+  epochs: 500
+  batch_size: 8
   lr_VAE: 0.001
 
 model:
   in_channels: 3
-  latent_dim: 256
+  latent_dim: 64
 
 data:
   test: True

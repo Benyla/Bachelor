@@ -92,7 +92,7 @@ def train(config, logger, train_loader, val_loader):
 
         # Compute averages
         avg = lambda k: epoch_losses[k] / (len(train_loader) * batch_size)
-        val_loss, val_recon, val_kl, val_adv = validate(model, val_loader, device, config=config, epoch=epoch)
+        val_loss, val_recon, val_kl, val_adv, val_x, val_x_rec = validate(model, val_loader, device, config=config, epoch=epoch)
 
         # Log metrics
         log_dict = {
@@ -109,7 +109,8 @@ def train(config, logger, train_loader, val_loader):
         logger.log_metrics(log_dict, step=epoch)
         scheduler.step(val_loss)
         logger.log_metrics({"lr": scheduler._last_lr[0]}, step=epoch)
-        logger.log_images(x, x_rec, step=epoch)
+        logger.log_images(x, x_rec, step=epoch, prefix="train")
+        logger.log_images(val_x, val_x_rec, step=epoch, prefix="val")
         save_model(logger, model, epoch, optimizer=optimizer_VAE, config=config)
 
     logger.stop()

@@ -36,7 +36,7 @@ class NeptuneLogger:
             self.run[tag].log(value, step=step)
 
 
-    def log_images(self, x, recon_x, step):
+    def log_images(self, x, recon_x, step, prefix="train"):
         idx = random.randint(0, x.size(0) - 1)
         original = x[idx].cpu()
         reconstructed = recon_x[idx].detach().cpu()
@@ -56,7 +56,7 @@ class NeptuneLogger:
         buf.seek(0)
         plt.close(fig)
 
-        self.run[f"visuals/comparison_epoke_{step}"] = neptune.types.File.from_content(buf.getvalue(), extension="png")
+        self.run[f"visuals/{prefix}/comparison_epoke_{step}"] = neptune.types.File.from_content(buf.getvalue(), extension="png")
     
     def stop(self):
         self.run.stop()

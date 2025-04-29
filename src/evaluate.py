@@ -49,4 +49,4 @@ def validate(model, val_loader, device, config=None, epoch=None):
         }, output_filename)
         print(f"[Validation] Saved latent codes for epoch {epoch}")
 
-    return avg_loss["total"], avg_loss["recon"], avg_loss["kl"], avg_loss["adv"]
+    return avg_loss["total"], avg_loss["recon"], avg_loss["kl"], avg_loss["adv"], x, x_rec

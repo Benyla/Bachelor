@@ -22,4 +22,4 @@
 # your training script here, e.g.
 # activate environment ...
 source .venv/bin/activate
-python src/train.py --config configs/config3.yaml
+python src/train.py --config configs/VAE_test.yaml
