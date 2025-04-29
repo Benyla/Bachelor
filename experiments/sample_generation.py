@@ -24,7 +24,7 @@ def load_latest_model(model_dir):
 
 def generate_variations(model, ref_img, num_samples, sigma):
     """
-    Given a single reference image (1×C×H×W), sample around its latent mean.
+    Given a single reference image (1xCxHxW), sample around its latent mean.
     Returns a Tensor of shape (num_samples, C, H, W).
     """
     device = next(model.parameters()).device
