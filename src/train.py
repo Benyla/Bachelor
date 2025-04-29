@@ -47,8 +47,8 @@ def train(config, logger, train_loader, val_loader):
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer_VAE,
         mode="min",
-        factor=config["training"].get("lr_scheduler_factor", 0.1),
-        patience=config["training"].get("lr_scheduler_patience", 3)
+        factor=config["training"].get("lr_scheduler_factor", 0.8),
+        patience=config["training"].get("lr_scheduler_patience", 5)
     )
 
     batch_size = config["training"]["batch_size"]
