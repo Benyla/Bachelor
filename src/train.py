@@ -42,14 +42,8 @@ def train(config, logger, train_loader, val_loader):
         optimizer_D = optim.SGD(
             model.discriminator.parameters(),
             lr=config["training"]["lr_D"],
+            momentum=0.9
         )
-
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer_VAE,
-        mode="min",
-        factor=config["training"].get("lr_scheduler_factor", 0.8),
-        patience=config["training"].get("lr_scheduler_patience", 5)
-    )
 
     batch_size = config["training"]["batch_size"]
 
@@ -75,7 +69,7 @@ def train(config, logger, train_loader, val_loader):
 
             # ----- VAE update -----
             recon, kl, adv_fm_loss, _ = model.loss(x, x_rec, mu, logvar)
-            loss = recon + model.beta * kl + adv_fm_loss
+            loss = recon + model.get_beta() * kl + adv_fm_loss
 
             optimizer_VAE.zero_grad()
             loss.backward()
@@ -104,8 +98,6 @@ def train(config, logger, train_loader, val_loader):
             log_dict.update({"train/adv": avg("adv"), "val/adv": val_adv})
 
         logger.log_metrics(log_dict, step=epoch)
-        scheduler.step(val_loss)
-        logger.log_metrics({"lr": scheduler._last_lr[0]}, step=epoch)
         logger.log_images(x, x_rec, step=epoch, prefix="train")
         logger.log_images(val_x, val_x_rec, step=epoch, prefix="val")
         save_model(logger, model, epoch, optimizer=optimizer_VAE, config=config)

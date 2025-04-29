@@ -109,6 +109,10 @@ class VAE(nn.Module):
     def _gamma(self, layer_idx: int):
         t = self.iter / self.T
         return min(max(t - layer_idx, 0.0), 1.0)
+    
+    def get_beta(self):
+        t = min(self.iter / self.T, 1.0)
+        return t * self.beta
 
     def loss(self, x, x_rec, mu, logvar, sigma=1.0):
         # --- ELBO terms ---
