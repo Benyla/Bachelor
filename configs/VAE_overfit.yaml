@@ -10,7 +10,7 @@ experiment:
 training:
   epochs: 500
   batch_size: 8
-  lr_VAE: 0.001
+  lr_VAE: 0.01
 
 model:
   in_channels: 3
