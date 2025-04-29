@@ -96,8 +96,8 @@ class VAE(nn.Module):
         return x_rec, mu, logvar
 
     def _gamma(self, layer_idx: int):
-        t = float(self.iter) / float(self.T)
-        return float(torch.clamp(t - layer_idx, 0.0, 1.0))
+        t = self.iter / self.T
+        return min(max(t - layer_idx, 0.0), 1.0)
 
     def loss(self, x, mu, logvar, sigma=1.0):
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
