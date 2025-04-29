@@ -3,7 +3,7 @@
 metadata_csv: /zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv
 
 experiment:
-  name: "VAE+_full_data"
+  name: "VAE+overfit"
   neptune_project: "benyla/Bachelor"
   tags: "cell_vae -- full_data"
 
@@ -17,7 +17,7 @@ model:
   in_channels: 3
   latent_dim: 64
   use_adv: True
-  beta: 0.001
+  beta: 0
   T: 2500
   overfit: True 
 
