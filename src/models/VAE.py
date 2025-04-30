@@ -92,6 +92,7 @@ class VAE(nn.Module):
     def encode(self, x):
         enc = self.encoder(x)
         mu, logvar = self.fc_mu(enc), self.fc_logvar(enc)
+        logvar = torch.clamp(logvar, min=-10.0, max=10.0) # to prevent eplosion in reparameterization
         if self.overfit:
             z = self.overfit_reparameterize(mu, logvar)
         else:
@@ -111,35 +112,44 @@ class VAE(nn.Module):
         return min(max(t - layer_idx, 0.0), 1.0)
     
     def get_beta(self):
-        t = min(self.iter / self.T, 1.0)
-        return t * self.beta
+        if self.use_adv:
+            t = min(self.iter / self.T, 1.0)
+            return t * self.beta
+        else:
+            return self.beta
 
-    def loss(self, x, x_rec, mu, logvar, sigma=1.0):
-        # --- ELBO terms ---
-        # 1) Recon loss
+    def loss(self, x, x_rec, mu, logvar):
+        """
+        Generator loss for VAE(+) = reconstruction + KL + (optional) feature-matching.
+        """
+        # 1) Reconstruction (MSE)
         recon_loss = F.mse_loss(x_rec, x, reduction='sum')
+
         # 2) KL divergence
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
-        # --- VAE+ adversarial terms ---
+        # 3) Adversarial feature-matching (if enabled)
         adv_fm_loss = torch.tensor(0., device=x.device)
         if self.use_adv:
-            # (a) Discriminator classification update
-            real_logits, feats_real = self.discriminator(x)
-            fake_logits_detach, _   = self.discriminator(x_rec.detach())
-            bce = F.binary_cross_entropy_with_logits
-            # (b) Feature-matching loss for generator
-            # Temporarily freeze D
-            for p in self.discriminator.parameters(): p.requires_grad = False
+            # get real features
+            _, feats_real = self.discriminator(x)
+            # freeze D so gradients only flow into the generator
+            for p in self.discriminator.parameters(): 
+                p.requires_grad = False
+            # get fake features
             _, feats_fake = self.discriminator(x_rec)
-            # Unfreeze D
-            for p in self.discriminator.parameters(): p.requires_grad = True
+            # un‐freeze D
+            for p in self.discriminator.parameters(): 
+                p.requires_grad = True
 
-            fm_losses = []
-            for i, (fr, ff) in enumerate(zip(feats_real, feats_fake)):
-                w = self._gamma(i)
-                fm_losses.append(w * F.mse_loss(ff, fr.detach(), reduction='sum'))
+            # sum up L2 distances weighted by your gamma schedule
+            fm_losses = [
+                self._gamma(i) * F.mse_loss(ff, fr.detach(), reduction='sum')
+                for i, (fr, ff) in enumerate(zip(feats_real, feats_fake))
+            ]
             adv_fm_loss = sum(fm_losses)
+
+            # advance your iteration counter (for gamma & beta schedules)
             self.iter += 1
 
         return recon_loss, kl_loss, adv_fm_loss

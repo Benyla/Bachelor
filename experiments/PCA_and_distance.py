@@ -20,8 +20,11 @@ from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 
 mpl.rcParams['font.family'] = 'serif'
 
-
-def subsample_equal(df, sample_size): # gets subsample of val_loader with equally distributed moa
+# sample_size determines how many total data points to include in the PCA.
+# If sample_size is None, the entire dataset will be used without downsampling.
+# If sample_size is set, the function tries to select that many points in total,
+# distributing them as evenly as possible across all 'moa' classes.
+def subsample_equal(df, sample_size): 
     df = df.dropna(subset=["moa"]).copy()
     classes = df["moa"].unique()
     n_classes = len(classes)
