@@ -79,7 +79,7 @@ class VAE(nn.Module):
         # final upsample + conv to avoid checkerboard
         self.up4 = nn.Sequential(
             nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-            nn.Conv2d(32, in_channels, kernel_size=3, padding=1),
+            nn.Conv2d(64, in_channels, kernel_size=3, padding=1),
             nn.Sigmoid()
         )
 
