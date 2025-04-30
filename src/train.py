@@ -70,7 +70,7 @@ def train(config, logger, train_loader, val_loader):
                 optimizer_D.step()
 
             # ----- VAE update -----
-            recon, kl, adv_fm_loss, _ = model.loss(x, x_rec, mu, logvar)
+            recon, kl, adv_fm_loss = model.loss(x, x_rec, mu, logvar)
             loss = recon + model.get_beta() * kl + adv_fm_loss
 
             optimizer_VAE.zero_grad()
