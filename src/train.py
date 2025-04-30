@@ -103,7 +103,7 @@ def train(config, logger, train_loader, val_loader):
         logger.log_metrics(log_dict, step=epoch)
         logger.log_images(x, x_rec, step=epoch, prefix="train")
         logger.log_images(val_x, val_x_rec, step=epoch, prefix="val")
-        save_model(logger, model, epoch, optimizer=optimizer_VAE, config=config)
+        save_model(logger, model, epoch, optimizer=optimizer_VAE, d_optimizer=optimizer_D if config["model"].get("use_adv", False) else None, config=config)
 
     logger.stop()
 

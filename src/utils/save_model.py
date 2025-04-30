@@ -2,7 +2,7 @@ import torch
 import os
 import copy
 
-def save_model(logger, model, epoch, optimizer=None, config=None):
+def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=None):
 
     save_dir = "/zhome/e9/c/186947/Bachelor/trained_models"
     
@@ -13,8 +13,11 @@ def save_model(logger, model, epoch, optimizer=None, config=None):
         "epoch": epoch,
         "model_state_dict": model_copy.state_dict(),
     }
+
     if optimizer is not None:
         checkpoint["optimizer_state_dict"] = optimizer.state_dict()
+    if d_optimizer is not None and config["model"].get("use_adv", False):
+        checkpoint["d_optimizer_state_dict"] = d_optimizer.state_dict()
 
     output_filename = (
         f"VAE+_epoch_{epoch}.pth"
