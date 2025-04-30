@@ -69,10 +69,22 @@ class VAE(nn.Module):
         self.decoder_input = nn.Linear(latent_dim, 256*4*4)
         self.decoder = nn.Sequential(
             nn.Unflatten(1, (256, 4, 4)),
-            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(32, in_channels, kernel_size=5, stride=2, padding=2, output_padding=1), nn.Sigmoid()
+            # Upsample + conv block 1
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(256, 128, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.01),
+            # Upsample + conv block 2
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.01),
+            # Upsample + conv block 3
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(64, 32, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.01),
+            # Upsample + conv block 4
+            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
+            nn.Conv2d(32, in_channels, kernel_size=3, padding=1),
+            nn.Sigmoid()
         )
 
         if use_adv:
