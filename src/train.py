@@ -30,17 +30,9 @@ def train(config, logger, train_loader, val_loader):
 
     # Separate parameters for VAE and Discriminator
     vae_params = (
-        list(model.enc1.parameters()) +
-        list(model.enc2.parameters()) +
-        list(model.enc3.parameters()) +
-        list(model.enc4.parameters()) +
-        list(model.fc_mu.parameters()) +
-        list(model.fc_logvar.parameters()) +
-        list(model.decoder_input.parameters()) +
-        list(model.up1.parameters()) +
-        list(model.up2.parameters()) +
-        list(model.up3.parameters()) +
-        list(model.up4.parameters())
+        list(model.encoder.parameters()) +
+        list(model.fc_mu.parameters()) + list(model.fc_logvar.parameters()) +
+        list(model.decoder_input.parameters()) + list(model.decoder.parameters())
     )
     optimizer_VAE = optim.Adam(
         vae_params,
@@ -145,3 +137,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

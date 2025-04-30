@@ -54,33 +54,25 @@ class VAE(nn.Module):
         self.overfit = overfit
         print(f"[Model Init] use_adv={self.use_adv}, overfit={self.overfit}")
 
-        self.enc1 = nn.Sequential(nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01))
-        self.enc2 = nn.Sequential(nn.Conv2d(32, 64,  kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01))
-        self.enc3 = nn.Sequential(nn.Conv2d(64, 128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01))
-        self.enc4 = nn.Sequential(nn.Conv2d(128,256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), nn.Flatten())
-
+        # Encoder: 4 conv blocks → flatten
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
+            nn.Flatten()
+        )
         self.fc_mu     = nn.Linear(256*4*4, latent_dim)
         self.fc_logvar = nn.Linear(256*4*4, latent_dim)
 
+        # Decoder: mirror of encoder
         self.decoder_input = nn.Linear(latent_dim, 256*4*4)
-        # keep three ConvTranspose2d for coarse upsampling
-        self.up1 = nn.Sequential(
-            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1),
-            nn.LeakyReLU(0.01)
-        )
-        self.up2 = nn.Sequential(
-            nn.ConvTranspose2d(256, 64, kernel_size=5, stride=2, padding=2, output_padding=1),
-            nn.LeakyReLU(0.01)
-        )
-        self.up3 = nn.Sequential(
-            nn.ConvTranspose2d(128, 32, kernel_size=5, stride=2, padding=2, output_padding=1),
-            nn.LeakyReLU(0.01)
-        )
-        # final upsample + conv to avoid checkerboard
-        self.up4 = nn.Sequential(
-            nn.Upsample(scale_factor=2, mode='bilinear', align_corners=False),
-            nn.Conv2d(64, in_channels, kernel_size=3, padding=1),
-            nn.Sigmoid()
+        self.decoder = nn.Sequential(
+            nn.Unflatten(1, (256, 4, 4)),
+            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
+            nn.ConvTranspose2d(32, in_channels, kernel_size=5, stride=2, padding=2, output_padding=1), nn.Sigmoid()
         )
 
         if use_adv:
@@ -110,22 +102,8 @@ class VAE(nn.Module):
         return self.decoder(self.decoder_input(z))
 
     def forward(self, x):
-        # encoder with skip
-        f1 = self.enc1(x)
-        f2 = self.enc2(f1)
-        f3 = self.enc3(f2)
-        z_input = self.enc4(f3)  # flattened
-        mu, logvar = self.fc_mu(z_input), self.fc_logvar(z_input)
-        z = self.overfit_reparameterize(mu, logvar) if self.overfit else self.reparameterize(mu, logvar)
-        # decoder
-        d = self.decoder_input(z).view(-1, 256, 4, 4)
-        d = self.up1(d)           # now (128,8,8)
-        d = torch.cat([d, f3], dim=1)  # skip connection, shape (256,8,8)
-        d = self.up2(d)           # (64,16,16)
-        d = torch.cat([d, f2], dim=1)  # (128,16,16)
-        d = self.up3(d)           # (32,32,32)
-        d = torch.cat([d, f1], dim=1)  # (64,32,32)
-        x_rec = self.up4(d)       # (in_channels,64,64)
+        z, mu, logvar = self.encode(x)
+        x_rec = self.decode(z)
         return x_rec, mu, logvar, z
 
     def _gamma(self, layer_idx: int):
@@ -178,3 +156,4 @@ class VAE(nn.Module):
             bce(fake_logits, self.fake_label.expand_as(fake_logits))
         )
         return d_loss
+
