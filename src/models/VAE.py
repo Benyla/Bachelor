@@ -116,25 +116,18 @@ class VAE(nn.Module):
 
     def loss(self, x, x_rec, mu, logvar, sigma=1.0):
         # --- ELBO terms ---
-        # 1) Recon loss via Gaussian log-likelihood
-        log_px = dist.Normal(x_rec, sigma).log_prob(x)
-        recon_loss = -torch.sum(log_px)
-        #recon_loss = F.mse_loss(x_rec, x, reduction='sum')
+        # 1) Recon loss
+        recon_loss = F.mse_loss(x_rec, x, reduction='sum')
         # 2) KL divergence
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
         # --- VAE+ adversarial terms ---
         adv_fm_loss = torch.tensor(0., device=x.device)
-        d_loss      = torch.tensor(0., device=x.device)
         if self.use_adv:
             # (a) Discriminator classification update
             real_logits, feats_real = self.discriminator(x)
             fake_logits_detach, _   = self.discriminator(x_rec.detach())
             bce = F.binary_cross_entropy_with_logits
-            d_loss = (
-                bce(real_logits, self.real_label.expand_as(real_logits)) +
-                bce(fake_logits_detach, self.fake_label.expand_as(fake_logits_detach))
-            )
             # (b) Feature-matching loss for generator
             # Temporarily freeze D
             for p in self.discriminator.parameters(): p.requires_grad = False
@@ -149,4 +142,17 @@ class VAE(nn.Module):
             adv_fm_loss = sum(fm_losses)
             self.iter += 1
 
-        return recon_loss, kl_loss, adv_fm_loss, d_loss
+        return recon_loss, kl_loss, adv_fm_loss
+
+    def loss_discriminator(self, x, x_rec):
+        """
+        Discriminator loss: binary cross-entropy on real vs. reconstructed images.
+        """
+        bce = F.binary_cross_entropy_with_logits
+        real_logits, _ = self.discriminator(x)
+        fake_logits, _ = self.discriminator(x_rec.detach())
+        d_loss = (
+            bce(real_logits, self.real_label.expand_as(real_logits)) +
+            bce(fake_logits, self.fake_label.expand_as(fake_logits))
+        )
+        return d_loss

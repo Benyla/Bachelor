@@ -7,6 +7,7 @@ import argparse, time
 from tqdm import tqdm
 from torch.utils.data import DataLoader, Subset
 import torch.optim as optim
+from torch.nn.utils import clip_grad_norm_
 
 from models.VAE import VAE
 from utils.data_loader import get_data, SingleCellDataset
@@ -63,8 +64,9 @@ def train(config, logger, train_loader, val_loader):
             if config["model"].get("use_adv", False):
                 optimizer_D.zero_grad()
                 # Only classification loss
-                _, _, _, d_loss = model.loss(x, x_rec, mu, logvar)
+                d_loss = model.loss_discriminator(x, x_rec)
                 d_loss.backward()
+                clip_grad_norm_(model.parameters(), max_norm=1.0)
                 optimizer_D.step()
 
             # ----- VAE update -----
@@ -73,6 +75,7 @@ def train(config, logger, train_loader, val_loader):
 
             optimizer_VAE.zero_grad()
             loss.backward()
+            clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer_VAE.step()
 
             # Track losses
