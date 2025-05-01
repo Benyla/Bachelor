@@ -68,6 +68,7 @@ def main():
     # load config & set checkpoint
     config = load_config(args.config)
     config['model']['checkpoint_path'] = args.model_path
+    use_adv = config['model'].get('use_adv', False)
     # add metadata path
     # assume config contains metadata_csv key or override here
     if 'metadata_csv' not in config:
@@ -98,7 +99,7 @@ def main():
     z_interp = np.array([(1 - a) * z_ctrl + a * z_tgt for a in alphas], dtype=np.float32)
 
     # decode
-    model = VAE(in_channels=config['model']['in_channels'], latent_dim=config['model']['latent_dim']).to(device)
+    model = VAE(in_channels=config['model']['in_channels'], latent_dim=config['model']['latent_dim'], use_adv=use_adv).to(device)
     ckpt = torch.load(args.model_path, map_location=device)
     model.load_state_dict(ckpt['model_state_dict'])
     imgs = decode_batch(model, z_interp, device)
