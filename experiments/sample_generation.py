@@ -7,8 +7,8 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from src.models.VAE import VAE
-from utils.config_loader import load_config
-from utils.data_loader import get_data, SingleCellDataset
+from src.utils.config_loader import load_config
+from src.utils.data_loader import get_data, SingleCellDataset
 
 def load_latest_model(model_dir):
     """Pick the newest .pth checkpoint by mtime."""
