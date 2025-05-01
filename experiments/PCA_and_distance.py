@@ -132,7 +132,7 @@ def main():
 
         # Save figure
         os.makedirs(args.output, exist_ok=True)
-        outpath = os.path.join(args.output, "MOA_distance_matrix_clustered.png")
+        outpath = os.path.join(args.output, "MOA_distance_matrix_clustered_VAE.png")
         plt.savefig(outpath, dpi=300)
         print(f"[INFO] Saved clustered distance figure to {outpath}")
         plt.show()
