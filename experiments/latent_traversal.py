@@ -46,7 +46,7 @@ def plot_interpolation(images, output, prefix):
         ax.set_title(f'{i+1}/{n}')
 
     os.makedirs(output, exist_ok=True)
-    outpath = os.path.join(output, f'{prefix}_traversal.png')
+    outpath = os.path.join(output, f'{prefix}_traversal_new.png')
     fig.tight_layout()
     fig.savefig(outpath, dpi=300)
     print(f'[INFO] Saved interpolation figure to {outpath}')

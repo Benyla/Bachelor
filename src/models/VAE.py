@@ -123,9 +123,13 @@ class VAE(nn.Module):
         Generator loss for VAE(+) = reconstruction + KL + (optional) feature-matching.
         """
         # 1) Reconstruction (MSE)
-        recon_loss = F.mse_loss(x_rec, x, reduction='sum')
+        #recon_loss = F.mse_loss(x_rec, x, reduction='sum')
+
+        log_px = dist.Normal(x_rec, 1).log_prob(x)
+        recon_loss = -torch.sum(log_px)
 
         # 2) KL divergence
+        # best if close to 0 - rewrite with out the negative sign
         kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
 
         # 3) Adversarial feature-matching (if enabled)
