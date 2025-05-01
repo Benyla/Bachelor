@@ -31,7 +31,7 @@ def generate_variations(model, ref_img, num_samples, sigma):
     device = next(model.parameters()).device
     ref_img = ref_img.to(device)
     with torch.no_grad():
-        _, mu, _ = model.encode(ref_img, return_stats=True)  # (1, D)
+        _, mu, _ = model.encode(ref_img)  # (1, D)
         eps = torch.randn(num_samples, mu.size(1), device=device) * sigma
         zs = mu + eps  # (num_samples, D)
         samples = model.decode(zs)  # (num_samples, C, H, W)
