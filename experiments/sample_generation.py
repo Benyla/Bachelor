@@ -2,6 +2,7 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
+import re
 import argparse
 import torch
 import numpy as np
@@ -11,14 +12,14 @@ from src.utils.config_loader import load_config
 from src.utils.data_loader import get_data, SingleCellDataset
 
 def load_latest_model(model_dir):
-    """Pick the newest .pth checkpoint by mtime."""
-    ckpts = sorted(
-        [f for f in os.listdir(model_dir) if f.endswith(".pth")],
-        key=lambda fn: os.path.getmtime(os.path.join(model_dir, fn)),
-    )
+    def extract_epoch(filename):
+        match = re.search(r'epoch_(\d+)', filename)
+        return int(match.group(1)) if match else -1
+
+    ckpts = [f for f in os.listdir(model_dir) if f.endswith(".pth")]
     if not ckpts:
         raise FileNotFoundError(f"No .pth files in {model_dir}")
-    latest = ckpts[-1]
+    latest = max(ckpts, key=extract_epoch)
     print(f"[Model] Loading checkpoint: {latest}")
     return os.path.join(model_dir, latest)
 
@@ -91,7 +92,7 @@ def main():
     T          = cfg["model"].get("T", 2500)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = VAE(in_ch, latent_dim, use_adv=use_adv, beta=beta, T=T).to(device)
+    model = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
 
     # --- Load latest checkpoint ---------------------------------------------
     model_dir = cfg.get("paths", {}).get("model_dir", "trained_models")
