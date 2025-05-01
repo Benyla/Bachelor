@@ -5,7 +5,7 @@ PYTHONPATH=$(pwd) python experiments/PCA_and_distance.py \
   --config configs/VAE_full_data.yaml \
   --model-path trained_models/VAE_epoch_49.pth \
   --sample-size 1000 \
-  --mode pca
+  --mode distance
 
 For compute_fid.py:
 PYTHONPATH=$(pwd) python experiments/compute_fid.py \
@@ -24,3 +24,10 @@ PYTHONPATH=$(pwd) python experiments/latent_traversal.py \
   --target-class "Actin disruptors" \
   --steps 10 \
   --output experiments/plots
+
+For sample_generation.py
+  PYTHONPATH=$(pwd) python experiments/sample_generation.py \
+  --config configs/VAE_full_data.yaml \
+  --ref_idx 42 \
+  --num_samples 8 \
+  --sigma 0.1

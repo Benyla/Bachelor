@@ -6,7 +6,7 @@ import argparse
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from models.VAE import VAE
+from src.models.VAE import VAE
 from utils.config_loader import load_config
 from utils.data_loader import get_data, SingleCellDataset
 
