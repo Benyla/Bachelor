@@ -50,13 +50,13 @@ def make_and_save(fig_name, plot_fn):
 def plot_barh(ax_dist, ax_img):
     counts = moa_counts.sort_values(ascending=True)
     counts.plot(kind="barh", ax=ax_dist)
-    ax_dist.set_title("MOA Distribution (barh)")
+    ax_dist.set_title("MOA Distribution")
     ax_dist.set_xlabel("Number of Instances")
     ax_dist.set_ylabel("MOA Class")
     ax_dist.grid(True)
     # image
     ax_img.imshow(img_rgb)
-    ax_img.set_title(f"Random Image:\n{selected_file}")
+    ax_img.set_title(f"Randomly Sampled Cell Image")
     ax_img.axis("off")
 
 make_and_save("moa_barh_with_image", plot_barh)
@@ -76,7 +76,7 @@ def plot_pie(ax_dist, ax_img):
     ax_dist.set_title("MOA Composition (pie)")
     # image
     ax_img.imshow(img_rgb)
-    ax_img.set_title(f"Random Image:\n{selected_file}")
+    ax_img.set_title(f"Randomly Sampled Cell Image")
     ax_img.axis("off")
 
 make_and_save("moa_pie_with_image", plot_pie)
