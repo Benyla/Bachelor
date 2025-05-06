@@ -11,7 +11,7 @@ import torch
 metadata_path = "/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv"
 image_dir     = "/work3/s224194/cell_images_processed"
 base_dir      = os.getcwd()
-plot_dir      = os.path.join(base_dir, "plots")
+plot_dir      = os.path.join(base_dir, "experiments/plots")
 
 # Ensure output directory exists
 os.makedirs(plot_dir, exist_ok=True)
