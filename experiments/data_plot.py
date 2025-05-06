@@ -3,6 +3,17 @@ import matplotlib.pyplot as plt
 import torch
 import os
 import random
+import os
+
+# Get absolute path using current working directory
+base_dir = os.getcwd()
+plot_dir = os.path.join(base_dir, "experiments", "plots")
+
+# Create the directory if it doesn't exist
+os.makedirs(plot_dir, exist_ok=True)
+
+# Full path to save plot
+save_path = os.path.join(plot_dir, "class_distribution_with_image.png")
 
 # === 1. Load metadata ===
 metadata_path = "/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv"
@@ -46,4 +57,4 @@ plt.title(f"Random Cell Image: {selected_file}")
 plt.axis("off")
 
 plt.tight_layout()
-plt.savefig("experiments/plots/class_distribution_with_image.png", dpi=300, bbox_inches='tight')
+plt.savefig(save_path, dpi=300, bbox_inches='tight')
