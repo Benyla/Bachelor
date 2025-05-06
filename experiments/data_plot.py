@@ -84,7 +84,7 @@ make_and_save("moa_pie_with_image", plot_pie)
 # ─── 3) Donut chart + image ───────────────────────────────────────────────────
 
 def plot_donut(ax_dist, ax_img):
-    wedges, texts, autotexts = moa_counts.plot(
+    moa_counts.plot(
         kind="pie",
         autopct="%1.1f%%",
         startangle=90,
