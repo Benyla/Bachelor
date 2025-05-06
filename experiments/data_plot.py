@@ -7,7 +7,7 @@ import os
 
 # Get absolute path using current working directory
 base_dir = os.getcwd()
-plot_dir = os.path.join(base_dir, "experiments", "plots")
+plot_dir = os.path.join(base_dir, "plots")
 
 # Create the directory if it doesn't exist
 os.makedirs(plot_dir, exist_ok=True)
