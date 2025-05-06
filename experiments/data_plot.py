@@ -1,60 +1,103 @@
+import os
+import random
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import torch
-import os
-import random
-import os
 
-# Get absolute path using current working directory
-base_dir = os.getcwd()
-plot_dir = os.path.join(base_dir, "plots")
+# ─── CONFIG ──────────────────────────────────────────────────────────────────
 
-# Create the directory if it doesn't exist
+# Paths
+metadata_path = "/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv"
+image_dir     = "/work3/s224194/cell_images_processed"
+base_dir      = os.getcwd()
+plot_dir      = os.path.join(base_dir, "plots")
+
+# Ensure output directory exists
 os.makedirs(plot_dir, exist_ok=True)
 
-# Full path to save plot
-save_path = os.path.join(plot_dir, "class_distribution_with_image.png")
+# ─── LOAD DATA ────────────────────────────────────────────────────────────────
 
-# === 1. Load metadata ===
-metadata_path = "/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv"
+# Metadata
 df = pd.read_csv(metadata_path)
-
-# === 2. Count instances per class in 'moa' column ===
 moa_counts = df["moa"].value_counts()
 
-# === 3. Plot the class distribution ===
-plt.figure(figsize=(14, 6))
-
-# Subplot 1: Class distribution bar plot
-plt.subplot(1, 2, 1)
-moa_counts.plot(kind='bar')
-plt.title("Class Distribution in 'moa'")
-plt.xlabel("MOA Class")
-plt.ylabel("Number of Instances")
-plt.xticks(rotation=45)
-plt.grid(True)
-
-# === 4. Load a random .pt file with 3 channels ===
-image_dir = "/work3/s224194/cell_images_processed"
+# Random image
 pt_files = [f for f in os.listdir(image_dir) if f.endswith(".pt")]
-
 selected_file = random.choice(pt_files)
-image_tensor = torch.load(os.path.join(image_dir, selected_file))
+img_t = torch.load(os.path.join(image_dir, selected_file))
+img_np = img_t.numpy()
+img_np = (img_np - img_np.min()) / (img_np.max() - img_np.min())
+img_rgb = img_np.transpose(1, 2, 0)
 
-# Check and adjust shape if necessary
-if image_tensor.shape[0] != 3:
-    raise ValueError(f"Expected 3 channels, but got shape: {image_tensor.shape}")
+# ─── PLOTTING FUNCTION ────────────────────────────────────────────────────────
 
-# === 5. Plot the image channels ===
-plt.subplot(1, 2, 2)
-# Assume shape [3, H, W], normalize to [0, 1]
-image_np = image_tensor.numpy()
-image_np = (image_np - image_np.min()) / (image_np.max() - image_np.min())
+def make_and_save(fig_name, plot_fn):
+    """
+    Create a figure, call `plot_fn(ax_dist, ax_img)` to draw,
+    then save to plots/{fig_name}.png.
+    """
+    fig, (ax_dist, ax_img) = plt.subplots(1, 2, figsize=(12, 5))
+    plot_fn(ax_dist, ax_img)
+    plt.tight_layout()
+    save_path = os.path.join(plot_dir, fig_name + ".png")
+    fig.savefig(save_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Saved {save_path}")
 
-# Display as RGB
-plt.imshow(image_np.transpose(1, 2, 0))
-plt.title(f"Random Cell Image: {selected_file}")
-plt.axis("off")
+# ─── 1) Horizontal bar chart + image ──────────────────────────────────────────
 
-plt.tight_layout()
-plt.savefig(save_path, dpi=300, bbox_inches='tight')
+def plot_barh(ax_dist, ax_img):
+    counts = moa_counts.sort_values(ascending=True)
+    counts.plot(kind="barh", ax=ax_dist)
+    ax_dist.set_title("MOA Distribution (barh)")
+    ax_dist.set_xlabel("Number of Instances")
+    ax_dist.set_ylabel("MOA Class")
+    ax_dist.grid(True)
+    # image
+    ax_img.imshow(img_rgb)
+    ax_img.set_title(f"Random Image:\n{selected_file}")
+    ax_img.axis("off")
+
+make_and_save("moa_barh_with_image", plot_barh)
+
+# ─── 2) Pie chart + image ─────────────────────────────────────────────────────
+
+def plot_pie(ax_dist, ax_img):
+    moa_counts.plot(
+        kind="pie",
+        autopct="%1.1f%%",
+        startangle=90,
+        pctdistance=0.75,
+        labeldistance=1.1,
+        ax=ax_dist
+    )
+    ax_dist.set_ylabel("")
+    ax_dist.set_title("MOA Composition (pie)")
+    # image
+    ax_img.imshow(img_rgb)
+    ax_img.set_title(f"Random Image:\n{selected_file}")
+    ax_img.axis("off")
+
+make_and_save("moa_pie_with_image", plot_pie)
+
+# ─── 3) Donut chart + image ───────────────────────────────────────────────────
+
+def plot_donut(ax_dist, ax_img):
+    wedges, texts, autotexts = moa_counts.plot(
+        kind="pie",
+        autopct="%1.1f%%",
+        startangle=90,
+        wedgeprops=dict(width=0.4),
+        textprops=dict(color="white"),
+        ax=ax_dist
+    )
+    ax_dist.set_ylabel("")
+    ax_dist.set_title("MOA Composition (donut)")
+    # image
+    ax_img.imshow(img_rgb)
+    ax_img.set_title(f"Randomly Sampled Cell Image")
+    ax_img.axis("off")
+
+make_and_save("moa_donut_with_image", plot_donut)
+
