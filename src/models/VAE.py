@@ -49,7 +49,7 @@ class VAE(nn.Module):
 
         # Encoder: 4 convolutional layers  → flatten
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  3, 64, 64] → [N,  32, 32, 32]
+            nn.Conv2d(in_channels,  32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  3, 64, 64] → [N,  32, 32, 32]
             nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  32, 32, 32] → [N,  64, 16, 16]
             nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  64, 16, 16] → [N, 128, 8, 8]
             nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N, 128, 8, 8]   → [N, 256, 4, 4]
@@ -58,34 +58,33 @@ class VAE(nn.Module):
         self.fc_mu     = nn.Linear(256*4*4, latent_dim) # spatial dims: 4x4
         self.fc_logvar = nn.Linear(256*4*4, latent_dim) # spatial dims: 4x4
 
-        # Decoder: opposite  of encoder
+        # Decoder: opposite  of encoder, output_padding to maintain spatial dims (ConvTranspose problems)
         self.decoder_input = nn.Linear(latent_dim, 256*4*4)
         self.decoder = nn.Sequential(
-            nn.Unflatten(1, (256, 4, 4)),
-            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01),
-            nn.ConvTranspose2d(32, in_channels, kernel_size=5, stride=2, padding=2, output_padding=1), nn.Sigmoid()
+            nn.Unflatten(1, (256, 4, 4)), # [N, 256*4*4] → [N, 256, 4, 4]
+            nn.ConvTranspose2d(256, 128, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01), # [N, 256, 4, 4] → [N, 128, 8, 8]
+            nn.ConvTranspose2d(128,  64, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01), # [N, 128, 8, 8] → [N, 64, 16, 16]
+            nn.ConvTranspose2d(64,   32, kernel_size=5, stride=2, padding=2, output_padding=1), nn.LeakyReLU(0.01), # [N, 64, 16, 16] → [N, 32, 32, 32]
+            nn.ConvTranspose2d(32, in_channels, kernel_size=5, stride=2, padding=2, output_padding=1), nn.Sigmoid() # [N, 32, 32, 32] → [N, 3, 64, 64]
         )
 
         if use_adv:
-            self.discriminator = Discriminator(in_channels)
+            self.discriminator = Discriminator(in_channels) # init discriminator
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            self.register_buffer('real_label', torch.tensor(1., device=device))
-            self.register_buffer('fake_label', torch.tensor(0., device=device))
+            self.register_buffer('real_label', torch.tensor(1., device=device)) # real_label = 1
+            self.register_buffer('fake_label', torch.tensor(0., device=device)) # fake_label = 0
 
-    def reparameterize(self, mu, logvar):
+    def reparameterize(self, mu, logvar): # reparameterization trick
         std = torch.exp(0.5 * logvar)
-        eps = torch.randn_like(std)
+        eps = torch.randn_like(std) # [N, latent_dim] - normally distributed with mean=0, std=1
         return mu + eps * std
 
-    def overfit_reparameterize(self, mu, logvar):
+    def overfit_reparameterize(self, mu, logvar): # we dont need uncertainty in overfitting
         return mu
 
     def encode(self, x):
         enc = self.encoder(x)
-        mu, logvar = self.fc_mu(enc), self.fc_logvar(enc)
-        logvar = torch.clamp(logvar, min=-10.0, max=10.0) # to prevent eplosion in reparameterization
+        mu, logvar = self.fc_mu(enc), torch.clamp(self.fc_logvar(enc), min=-10.0, max=10.0) # to prevent eplosion in reparameterization
         if self.overfit:
             z = self.overfit_reparameterize(mu, logvar)
         else:
@@ -104,12 +103,14 @@ class VAE(nn.Module):
         t = self.iter / self.T
         return min(max(t - layer_idx, 0.0), 1.0)
     
-    def get_beta(self):
-        if self.use_adv:
-            t = min(self.iter / self.T, 1.0)
-            return t * self.beta
-        else:
-            return 0
+    # def _gamma(self, layer_idx: int):
+    #     L = len(self.discriminator.layers)      # total number of feature levels
+    #     delta = 1.0 / L                          # spacing between layer activations
+    #     t = self.iter / self.T                  # normalized training progress ∈ [0, 1]
+    #     return min(max((t - layer_idx * delta) / delta, 0.0), 1.0)
+
+    # and T = 16_687 for 4 layers
+    # ramping up throughout training - later layers weighted by 0 for first many epochs
 
     def loss(self, x, x_rec, mu, logvar):
         """
