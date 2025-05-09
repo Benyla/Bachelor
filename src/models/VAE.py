@@ -6,8 +6,7 @@ import torch.distributions as dist
 class Discriminator(nn.Module):
     def __init__(self, in_channels=3):
         super().__init__()
-        # 4 conv layers with 5×5 kernels, stride=2, padding=2
-        # BatchNorm + LeakyReLU(0.01) as per Lafarge et al.
+        # 4 convolutional layers → classifier
         self.layers = nn.ModuleList([
             nn.Sequential(
                 nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2),
@@ -26,7 +25,7 @@ class Discriminator(nn.Module):
                 nn.LeakyReLU(0.01)
             )
         ])
-        # classifier head: from 256×4×4 → 1 logit
+        # out will be [N, 256, 4, 4] when passed here → [N, 1, 1, 1] - this is just N numbers 
         self.classifier = nn.Conv2d(256, 1, kernel_size=4)
 
     def forward(self, x):
@@ -34,18 +33,12 @@ class Discriminator(nn.Module):
         out = x
         for layer in self.layers:
             out = layer(out)
-            feats.append(out)
-        logits = self.classifier(out).view(-1)
-        return logits, feats
+            feats.append(out) # save intermediate features for each layer
+        logits = self.classifier(out).view(-1) # [N, 1, 1, 1] → [N] collabsing tensor to list of N numbers
+        return logits, feats # returning classifier logits and intermediate features
 
 class VAE(nn.Module):
-    def __init__(self,
-                 in_channels=3,
-                 latent_dim=256,
-                 beta=2.0,
-                 T=2500,
-                 use_adv=True,
-                 overfit=False):
+    def __init__(self, in_channels=3, latent_dim=256, beta=2.0, T=2500, use_adv=True, overfit=False):
         super().__init__()
         self.beta = beta
         self.T = T
@@ -54,18 +47,18 @@ class VAE(nn.Module):
         self.overfit = overfit
         print(f"[Model Init] use_adv={self.use_adv}, overfit={self.overfit}")
 
-        # Encoder: 4 conv blocks → flatten
+        # Encoder: 4 convolutional layers  → flatten
         self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
-            nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
-            nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
-            nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01),
-            nn.Flatten()
+            nn.Conv2d(in_channels, 32, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  3, 64, 64] → [N,  32, 32, 32]
+            nn.Conv2d(32,           64, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  32, 32, 32] → [N,  64, 16, 16]
+            nn.Conv2d(64,          128, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N,  64, 16, 16] → [N, 128, 8, 8]
+            nn.Conv2d(128,         256, kernel_size=5, stride=2, padding=2), nn.LeakyReLU(0.01), # [N, 128, 8, 8]   → [N, 256, 4, 4]
+            nn.Flatten() # [N, 256, 4, 4]   → [N, 4096]
         )
-        self.fc_mu     = nn.Linear(256*4*4, latent_dim)
-        self.fc_logvar = nn.Linear(256*4*4, latent_dim)
+        self.fc_mu     = nn.Linear(256*4*4, latent_dim) # spatial dims: 4x4
+        self.fc_logvar = nn.Linear(256*4*4, latent_dim) # spatial dims: 4x4
 
-        # Decoder: mirror of encoder
+        # Decoder: opposite  of encoder
         self.decoder_input = nn.Linear(latent_dim, 256*4*4)
         self.decoder = nn.Sequential(
             nn.Unflatten(1, (256, 4, 4)),
@@ -116,7 +109,7 @@ class VAE(nn.Module):
             t = min(self.iter / self.T, 1.0)
             return t * self.beta
         else:
-            return self.beta
+            return 0
 
     def loss(self, x, x_rec, mu, logvar):
         """

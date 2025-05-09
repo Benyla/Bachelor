@@ -66,16 +66,17 @@ def train(config, logger, train_loader, val_loader):
                 # Only classification loss
                 d_loss = model.loss_discriminator(x, x_rec)
                 d_loss.backward()
-                clip_grad_norm_(model.parameters(), max_norm=1.0)
+                clip_grad_norm_(model.discriminator.parameters(), max_norm=1.0)
                 optimizer_D.step()
 
             # ----- VAE update -----
             recon, kl, adv_fm_loss = model.loss(x, x_rec, mu, logvar)
-            loss = recon + model.get_beta() * kl + adv_fm_loss
+            # adv_fm_loss is scaled by _gamma method if use_adv=True otherwise 0
+            loss = recon + model.beta * kl + adv_fm_loss
 
             optimizer_VAE.zero_grad()
             loss.backward()
-            clip_grad_norm_(model.parameters(), max_norm=1.0)
+            clip_grad_norm_(vae_params, max_norm=1.0)
             optimizer_VAE.step()
 
             # Track losses
