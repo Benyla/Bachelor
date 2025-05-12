@@ -98,65 +98,56 @@ class VAE(nn.Module):
         z, mu, logvar = self.encode(x)
         x_rec = self.decode(z)
         return x_rec, mu, logvar, z
-
-    def _gamma(self, layer_idx: int):
-        t = self.iter / self.T
-        return min(max(t - layer_idx, 0.0), 1.0)
     
-    # def _gamma(self, layer_idx: int):
-    #     L = len(self.discriminator.layers)      # total number of feature levels
-    #     delta = 1.0 / L                          # spacing between layer activations
-    #     t = self.iter / self.T                  # normalized training progress ∈ [0, 1]
-    #     return min(max((t - layer_idx * delta) / delta, 0.0), 1.0)
-
-    # and T = 16_687 for 4 layers
-    # ramping up throughout training - later layers weighted by 0 for first many epochs
+    def _gamma(self, layer_idx: int): # custom gamma function to follow lafarge2019capturing
+        L = len(self.discriminator.layers)
+        delta = 1.0/L
+        t = self.iter / self.T
+        return min(max((t - layer_idx * delta) / delta, 0.0), 1.0)
 
     def loss(self, x, x_rec, mu, logvar):
-        """
-        Generator loss for VAE(+) = reconstruction + KL + (optional) feature-matching.
-        """
-        # 1) Reconstruction (MSE)
-        #recon_loss = F.mse_loss(x_rec, x, reduction='sum')
 
+        # Reconstruction loss - this implementation will add a constant to the loss
         log_px = dist.Normal(x_rec, 1).log_prob(x)
         recon_loss = -torch.sum(log_px)
 
-        # 2) KL divergence
-        # best if close to 0 - rewrite with out the negative sign
-        kl_loss = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        # KL loss
+        kl_loss = 0.5 * torch.sum(mu.pow(2) + logvar.exp() - 1 - logvar)
 
-        # 3) Adversarial feature-matching (if enabled)
+        #cAdversarial loss
         adv_fm_loss = torch.tensor(0., device=x.device)
         if self.use_adv:
-            # get real features
-            _, feats_real = self.discriminator(x)
-            # freeze D so gradients only flow into the generator
-            for p in self.discriminator.parameters(): 
+            # Freeze discriminator parameters as we dont want to update them here
+            for p in self.discriminator.parameters():
                 p.requires_grad = False
-            # get fake features
-            _, feats_fake = self.discriminator(x_rec)
-            # un‐freeze D
-            for p in self.discriminator.parameters(): 
+
+            _, feats_real = self.discriminator(x)       # real features
+            _, feats_fake = self.discriminator(x_rec)   # fake features
+
+            # Unfreeze discriminator parameters again
+            for p in self.discriminator.parameters():
                 p.requires_grad = True
 
-            # sum up L2 distances weighted by your gamma schedule
+            # feature matching loss
+            # Forces the VAE to generate images that are similar to the real ones in the feature space of the discriminator
+            # This does not influence the discriminator 
+            # We simply uses the fact that the discriminator pushes real and fake images apart in the feature space
+            # Then if the VAE can generate images that are close to the real ones in the  discriminator feature space
+            # It must be hard to distinguish between real and fake images
             fm_losses = [
                 self._gamma(i) * F.mse_loss(ff, fr.detach(), reduction='sum')
                 for i, (fr, ff) in enumerate(zip(feats_real, feats_fake))
             ]
             adv_fm_loss = sum(fm_losses)
 
-            # advance your iteration counter (for gamma & beta schedules)
+            # iteration counter
             self.iter += 1
 
         return recon_loss, kl_loss, adv_fm_loss
 
     def loss_discriminator(self, x, x_rec):
-        """
-        Discriminator loss: binary cross-entropy on real vs. reconstructed images.
-        """
-        bce = F.binary_cross_entropy_with_logits
+        # Discriminator loss - gets lower when D is good at classifying real vs fake
+        bce = F.binary_cross_entropy_with_logits # applies sigmoid internally, to get numbers between 0 and 1
         real_logits, _ = self.discriminator(x)
         fake_logits, _ = self.discriminator(x_rec.detach())
         d_loss = (

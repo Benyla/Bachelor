@@ -18,7 +18,7 @@ model:
   latent_dim: 64
   use_adv: True
   beta: 0
-  T: 2500
+  T: 16687
   overfit: True 
 
 data:

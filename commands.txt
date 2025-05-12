@@ -26,7 +26,7 @@ PYTHONPATH=$(pwd) python experiments/latent_traversal.py \
   --output experiments/plots
 
 For sample_generation.py
-  PYTHONPATH=$(pwd) python experiments/sample_generation.py \
+PYTHONPATH=$(pwd) python experiments/sample_generation.py \
   --config configs/VAE_full_data.yaml \
   --ref_idx 42 \
   --num_samples 8 \

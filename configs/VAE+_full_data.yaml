@@ -11,14 +11,14 @@ training:
   epochs: 50
   batch_size: 256
   lr_VAE: 0.001
-  lr_D: 0.01   # <- increased for SGD optimizer
+  lr_D: 0.01 
 
 model:
   in_channels: 3
-  latent_dim: 256  # <- match paper latent dimension
+  latent_dim: 256 
   use_adv: True
   beta: 2.0
-  T: 2500
+  T: 16687
   overfit: False
 
 data:
