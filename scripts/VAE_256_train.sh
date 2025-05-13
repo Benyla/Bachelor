@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # A100 GPU queue, there is also gpua40 and gpua10
-#BSUB -q gpua40
+#BSUB -q gpua100
 
 # job name
 #BSUB -J job_name_goes_here
