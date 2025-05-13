@@ -113,15 +113,29 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # Prepare checkpoint path for loading weights into temp model
+    model_dir  = cfg.get("paths", {}).get("model_dir", "trained_models")
+    prefix     = f"VAE+_{latent_dim}_" if use_adv else f"VAE_{latent_dim}_"
+    ckpt_path  = load_latest_model(model_dir, prefix)
+
+    if use_adv:
+        model_name = "VAE+_" + str(latent_dim)
+    else:
+        model_name = "VAE_" + str(latent_dim)
+
     # Determine top-2 latent dims by variance, with caching
-    stats_path = os.path.join("experiments", "latent_stats.pth")
+    stats_path = os.path.join("experiments", f"{model_name}_latent_stats.pth")
     if os.path.exists(stats_path):
         stats = torch.load(stats_path)
         dims = stats["dims"]
     else:
         model_temp = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
-        latents = []
+        # Load trained weights into the temp model before encoding
+        ckpt   = torch.load(ckpt_path, map_location=device)
+        state  = ckpt.get("model_state_dict", ckpt)
+        model_temp.load_state_dict(state)
         model_temp.eval()
+        latents = []
         with torch.no_grad():
             for img, _ in val_ds:
                 img = img.unsqueeze(0).to(device)
