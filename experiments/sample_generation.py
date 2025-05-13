@@ -97,9 +97,10 @@ def main():
     model = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
 
     # --- Load latest checkpoint ---------------------------------------------
-    model_dir = cfg.get("paths", {}).get("model_dir", "trained_models")
-    prefix = "VAE+" if use_adv else "VAE_"
-    ckpt_path = load_latest_model(model_dir, prefix)
+    model_dir   = cfg.get("paths", {}).get("model_dir", "trained_models")
+    latent_dim  = cfg["model"]["latent_dim"]
+    prefix      = f"VAE+_{latent_dim}_" if use_adv else f"VAE_{latent_dim}_"
+    ckpt_path   = load_latest_model(model_dir, prefix)
     ckpt = torch.load(ckpt_path, map_location=device)
     # support both full-state and bare-state dicts
     state = ckpt.get("model_state_dict", ckpt)

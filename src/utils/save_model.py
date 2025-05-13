@@ -19,10 +19,12 @@ def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=No
     if d_optimizer is not None and config["model"].get("use_adv", False):
         checkpoint["d_optimizer_state_dict"] = d_optimizer.state_dict()
 
+    latent_dim = config["model"].get("latent_dim", 256)
+
     output_filename = (
-        f"VAE+_epoch_{epoch}.pth"
+        f"VAE+_{latent_dim}_epoch_{epoch}.pth"
         if config["model"].get("use_adv", False)
-        else f"VAE_epoch_{epoch}.pth"
+        else f"VAE_{latent_dim}_epoch_{epoch}.pth"
     )
 
     save_path = os.path.join(save_dir, output_filename)
