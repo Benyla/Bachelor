@@ -26,7 +26,7 @@ def load_latest_model(model_dir, prefix=''):
     return os.path.join(model_dir, latest)
 
 
-def generate_grid_variations(model, ref_img, sigma, grid_size=5, dims=(0,1)):
+def generate_grid_variations(model, ref_img, sigma, grid_size=5):
     """
     Given a single reference image (1xCxHxW), traverse two latent dimensions
     over a grid centered at the image's latent mean.
@@ -34,6 +34,21 @@ def generate_grid_variations(model, ref_img, sigma, grid_size=5, dims=(0,1)):
     """
     device = next(model.parameters()).device
     ref_img = ref_img.to(device)
+
+    # Load dataset and compute latent variances to select top-2 variance dims
+    _, val_files, _ = get_data()
+    val_ds = SingleCellDataset(val_files)
+    model.eval()
+    latents = []
+    with torch.no_grad():
+        for img, _ in val_ds:
+            img = img.unsqueeze(0).to(device)
+            _, mu, _ = model.encode(img)
+            latents.append(mu.squeeze(0).cpu())
+    latents = torch.stack(latents, dim=0)  # (N, D)
+    variances = torch.var(latents, dim=0)
+    dims = torch.topk(variances, 2).indices.tolist()
+
     with torch.no_grad():
         _, mu, _ = model.encode(ref_img)  # (1, D)
         mu = mu.squeeze(0)                # (D,)
@@ -117,14 +132,14 @@ def main():
     model.eval()
 
     # --- Generate grid of latent traversals around reference image ----
-    grid_size = 9
+    grid_size = 5
     grid_samples = generate_grid_variations(model, ref_img, sigma, grid_size=grid_size)
 
     # --- Plot + save grid ----
     prefix_plot = f"VAE+_{latent_dim}_near_traversal" if use_adv else f"VAE_{latent_dim}_near_traversal"
     out_dir = os.path.join("experiments", "plots")
     os.makedirs(out_dir, exist_ok=True)
-    fname = f"{prefix_plot}_ref{ref_id}_grid{grid_size}.png"
+    fname = f"{prefix_plot}_ref{ref_idx}_grid{grid_size}.png"
     save_path = os.path.join(out_dir, fname)
     plot_grid_reference_and_samples(grid_samples, save_path)
 
