@@ -36,14 +36,21 @@ def plot_interpolation(images, output, prefix):
     """
     n = len(images)
     images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
-    fig, axes = plt.subplots(1, n, figsize=(n*2, 2))
+    rows, cols = 4, 5
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 2, rows * 2))
 
-    for i in range(n):
-        ax = axes[i]
-        img = images[i]
-        ax.imshow(img)  # <-- this line is now correct
-        ax.axis('off')
-        ax.set_title(f'{i+1}/{n}')
+    idx = 0
+    for r in range(rows):
+        for c in range(cols):
+            ax = axes[r, c]
+            if idx < n:
+                img = images[idx]
+                ax.imshow(img)
+                ax.set_title(f'{idx+1}/{n}')
+            else:
+                ax.axis('off')
+            ax.axis('off')
+            idx += 1
 
     os.makedirs(output, exist_ok=True)
     outpath = os.path.join(output, f'{prefix}_traversal_VAE.png')
@@ -58,7 +65,7 @@ def main():
     parser.add_argument('--model-path', type=str, required=True, help='VAE checkpoint .pth')
     parser.add_argument('--control-class', type=str, required=True, help='MOA label for control cells')
     parser.add_argument('--target-class', type=str, required=True, help='MOA label for target cells')
-    parser.add_argument('--steps', type=int, default=10, help='Number of interpolation steps')
+    parser.add_argument('--steps', type=int, default=20, help='Number of interpolation steps')
     parser.add_argument('--batch-size', type=int, default=64, help='Batch size for encoding')
     parser.add_argument('--output', type=str, default='experiments/traversal', help='Output directory')
     args = parser.parse_args()
