@@ -1,20 +1,22 @@
-# config.yaml
-
 metadata_csv: /zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv
 
 experiment:
-  name: "VAE_full_data"
+  name: "VAE+_128"
   neptune_project: "benyla/Bachelor"
-  tags: "cell_vae -- full_data"
+  tags: "VAE+_128"
 
 training:
   epochs: 50
   batch_size: 256
   lr_VAE: 0.001
+  lr_D: 0.01 
 
 model:
   in_channels: 3
-  latent_dim: 256
+  latent_dim: 128
+  use_adv: True
+  beta: 2.0
+  T: 16687
   overfit: False
 
 data:

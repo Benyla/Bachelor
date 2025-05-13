@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # A100 GPU queue, there is also gpua40 and gpua10
-#BSUB -q gpua100
+#BSUB -q gpua40
 
 # job name
 #BSUB -J job_name_goes_here
@@ -22,4 +22,4 @@
 # your training script here, e.g.
 # activate environment ...
 source .venv/bin/activate
-python src/train.py --config configs/VAE+_overfit.yaml
+python src/train.py --config configs/VAE_256.yaml
