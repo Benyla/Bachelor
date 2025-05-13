@@ -26,7 +26,7 @@ def load_latest_model(model_dir, prefix=''):
     return os.path.join(model_dir, latest)
 
 
-def generate_grid_variations(model, ref_img, sigma, grid_size=5):
+def generate_grid_variations(model, ref_img, sigma, grid_size=9, dims=None):
     """
     Given a single reference image (1xCxHxW), traverse two latent dimensions
     over a grid centered at the image's latent mean.
@@ -35,19 +35,8 @@ def generate_grid_variations(model, ref_img, sigma, grid_size=5):
     device = next(model.parameters()).device
     ref_img = ref_img.to(device)
 
-    # Load dataset and compute latent variances to select top-2 variance dims
-    _, val_files, _ = get_data()
-    val_ds = SingleCellDataset(val_files)
-    model.eval()
-    latents = []
-    with torch.no_grad():
-        for img, _ in val_ds:
-            img = img.unsqueeze(0).to(device)
-            _, mu, _ = model.encode(img)
-            latents.append(mu.squeeze(0).cpu())
-    latents = torch.stack(latents, dim=0)  # (N, D)
-    variances = torch.var(latents, dim=0)
-    dims = torch.topk(variances, 2).indices.tolist()
+    if dims is None:
+        raise ValueError("Must provide dims to generate_grid_variations")
 
     with torch.no_grad():
         _, mu, _ = model.encode(ref_img)  # (1, D)
@@ -65,12 +54,17 @@ def generate_grid_variations(model, ref_img, sigma, grid_size=5):
         # reshape to grid
         return samples.view(grid_size, grid_size, *samples.shape[1:]).cpu()
 
-def plot_grid_reference_and_samples(grid_samples, save_path):
+def plot_grid_reference_and_samples(grid_samples, ref_img, save_path):
     """
     Display and save a grid of images.
     grid_samples: Tensor of shape (G, G, C, H, W).
     """
+    # Place original reference image in the center
     G = grid_samples.shape[0]
+    center = G // 2
+    orig = ref_img.squeeze(0).cpu().numpy().transpose(1, 2, 0)
+    grid_samples[center, center] = torch.from_numpy(orig).permute(2, 0, 1)
+
     C, H, W = grid_samples.shape[2:]
     fig, axes = plt.subplots(G, G, figsize=(2*G, 2*G))
     for i in range(G):
@@ -118,6 +112,29 @@ def main():
     T          = cfg["model"].get("T", 2500)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Determine top-2 latent dims by variance, with caching
+    stats_path = os.path.join("experiments", "latent_stats.pth")
+    if os.path.exists(stats_path):
+        stats = torch.load(stats_path)
+        dims = stats["dims"]
+    else:
+        model_temp = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
+        latents = []
+        model_temp.eval()
+        with torch.no_grad():
+            for img, _ in val_ds:
+                img = img.unsqueeze(0).to(device)
+                _, mu, _ = model_temp.encode(img)
+                latents.append(mu.squeeze(0).cpu())
+        latents = torch.stack(latents, dim=0)
+        variances = torch.var(latents, dim=0)
+        dims = torch.topk(variances, 2).indices.tolist()
+        os.makedirs("experiments", exist_ok=True)
+        torch.save({"dims": dims}, stats_path)
+        del model_temp
+    print(f"Using latent dims for traversal: {dims}")
+
     model = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
 
     # --- Load latest checkpoint ---------------------------------------------
@@ -133,15 +150,15 @@ def main():
 
     # --- Generate grid of latent traversals around reference image ----
     grid_size = 5
-    grid_samples = generate_grid_variations(model, ref_img, sigma, grid_size=grid_size)
+    grid_samples = generate_grid_variations(model, ref_img, sigma, grid_size=grid_size, dims=dims)
 
     # --- Plot + save grid ----
     prefix_plot = f"VAE+_{latent_dim}_near_traversal" if use_adv else f"VAE_{latent_dim}_near_traversal"
     out_dir = os.path.join("experiments", "plots")
     os.makedirs(out_dir, exist_ok=True)
-    fname = f"{prefix_plot}_ref{ref_idx}_grid{grid_size}.png"
+    fname = f"{prefix_plot}_dims{dims[0]}-{dims[1]}_ref{ref_idx}_grid{grid_size}.png"
     save_path = os.path.join(out_dir, fname)
-    plot_grid_reference_and_samples(grid_samples, save_path)
+    plot_grid_reference_and_samples(grid_samples, ref_img, save_path)
 
 if __name__ == "__main__":
     main()
