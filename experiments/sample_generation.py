@@ -26,7 +26,7 @@ def load_latest_model(model_dir, prefix=''):
     return os.path.join(model_dir, latest)
 
 
-def generate_grid_variations(model, ref_img, sigma, grid_size=9, dims=(0,1)):
+def generate_grid_variations(model, ref_img, sigma, grid_size=5, dims=(0,1)):
     """
     Given a single reference image (1xCxHxW), traverse two latent dimensions
     over a grid centered at the image's latent mean.
