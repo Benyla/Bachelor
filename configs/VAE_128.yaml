@@ -1,9 +1,9 @@
 metadata_csv: /zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv
 
 experiment:
-  name: "VAE_full_data"
+  name: "VAE_128"
   neptune_project: "benyla/Bachelor"
-  tags: "cell_vae -- full_data"
+  tags: "VAE_128"
 
 training:
   epochs: 50

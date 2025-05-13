@@ -38,7 +38,7 @@ class Discriminator(nn.Module):
         return logits, feats # returning classifier logits and intermediate features
 
 class VAE(nn.Module):
-    def __init__(self, in_channels=3, latent_dim=256, beta=2.0, T=2500, use_adv=True, overfit=False):
+    def __init__(self, in_channels=3, latent_dim=256, beta=2.0, T=16687, use_adv=True, overfit=False):
         super().__init__()
         self.beta = beta
         self.T = T

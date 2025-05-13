@@ -11,14 +11,16 @@ from src.models.VAE import VAE
 from src.utils.config_loader import load_config
 from src.utils.data_loader import get_data, SingleCellDataset
 
-def load_latest_model(model_dir):
+def load_latest_model(model_dir, prefix=''):
     def extract_epoch(filename):
         match = re.search(r'epoch_(\d+)', filename)
         return int(match.group(1)) if match else -1
-
-    ckpts = [f for f in os.listdir(model_dir) if f.endswith(".pth")]
+    ckpts = [
+        f for f in os.listdir(model_dir)
+        if f.endswith(".pth") and f.startswith(prefix)
+    ]
     if not ckpts:
-        raise FileNotFoundError(f"No .pth files in {model_dir}")
+        raise FileNotFoundError(f"No .pth files in {model_dir} matching prefix '{prefix}'")
     latest = max(ckpts, key=extract_epoch)
     print(f"[Model] Loading checkpoint: {latest}")
     return os.path.join(model_dir, latest)
@@ -96,7 +98,8 @@ def main():
 
     # --- Load latest checkpoint ---------------------------------------------
     model_dir = cfg.get("paths", {}).get("model_dir", "trained_models")
-    ckpt_path = load_latest_model(model_dir)
+    prefix = "VAE+" if use_adv else "VAE_"
+    ckpt_path = load_latest_model(model_dir, prefix)
     ckpt = torch.load(ckpt_path, map_location=device)
     # support both full-state and bare-state dicts
     state = ckpt.get("model_state_dict", ckpt)
