@@ -86,7 +86,7 @@ def main():
     ctrl_df = df[df['moa'] == args.control_class]
     if ctrl_df.empty:
         raise ValueError(f"No samples found for control class '{args.control_class}'")
-    z_ctrl = ctrl_df.iloc[0][[c for c in df.columns if c.startswith('z')]].values
+    z_ctrl = ctrl_df.iloc[300][[c for c in df.columns if c.startswith('z')]].values
 
     # Select target latent (first of target class)
     tgt_df = df[df['moa'] == args.target_class]
@@ -105,7 +105,8 @@ def main():
     imgs = decode_batch(model, z_interp, device)
 
     # plot
-    plot_interpolation(imgs, args.output, f"{args.control_class}_to_{args.target_class}")
+    model_base = os.path.splitext(os.path.basename(args.model_path))[0]
+    plot_interpolation(imgs, args.output, f"{model_base}_{args.control_class}_to_{args.target_class}")
 
 if __name__ == '__main__':
     main()

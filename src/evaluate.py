@@ -36,12 +36,13 @@ def validate(model, val_loader, device, config=None, epoch=None):
     avg_loss = {k: v / scale for k, v in loss_acc.items()}
 
     # Save latent codes and IDs
+    latent_dim = config["model"]["latent_dim"]
     if epoch is not None:
         os.makedirs("latent_codes", exist_ok=True)
         output_filename = (
-            f"latent_codes/VAE+_latent_epoch_{epoch}.pth"
+            f"latent_codes/VAE+_{latent_dim}_latent_epoch_{epoch}.pth"
             if config["model"].get("use_adv", False)
-            else f"latent_codes/VAE_latent_epoch_{epoch}.pth"
+            else f"latent_codes/VAE_{latent_dim}_latent_epoch_{epoch}.pth"
         )
         torch.save({
             "latent_codes": torch.cat(latents, dim=0),

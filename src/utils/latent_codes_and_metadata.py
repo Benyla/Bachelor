@@ -17,10 +17,11 @@ def get_latent_and_metadata(config, epoch):
         pd.DataFrame with columns ["id", "moa", "z0","z1",...]
     """
     # 1) Build filename based on whether you used adversarial
-    latent_dir = config.get("latent_codes_dir", "latent_codes")
+    latent_dir = "latent_codes"
     use_adv    = config["model"].get("use_adv", False)
+    latent_dim = config["model"].get("latent_dim", 256)
     prefix     = "VAE+" if use_adv else "VAE"
-    fname      = f"{prefix}_latent_epoch_{epoch}.pth"
+    fname      = f"{prefix}_{latent_dim}_latent_epoch_{epoch}.pth"
     path       = os.path.join(latent_dir, fname)
     
     # 2) Load the saved dictionary
