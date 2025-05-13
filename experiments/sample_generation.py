@@ -25,32 +25,44 @@ def load_latest_model(model_dir, prefix=''):
     print(f"[Model] Loading checkpoint: {latest}")
     return os.path.join(model_dir, latest)
 
-def generate_variations(model, ref_img, num_samples, sigma):
+
+def generate_grid_variations(model, ref_img, sigma, grid_size=9, dims=(0,1)):
     """
-    Given a single reference image (1xCxHxW), sample around its latent mean.
-    Returns a Tensor of shape (num_samples, C, H, W).
+    Given a single reference image (1xCxHxW), traverse two latent dimensions
+    over a grid centered at the image's latent mean.
+    Returns a Tensor of shape (grid_size, grid_size, C, H, W).
     """
     device = next(model.parameters()).device
     ref_img = ref_img.to(device)
     with torch.no_grad():
         _, mu, _ = model.encode(ref_img)  # (1, D)
-        eps = torch.randn(num_samples, mu.size(1), device=device) * sigma
-        zs = mu + eps  # (num_samples, D)
-        samples = model.decode(zs)  # (num_samples, C, H, W)
-    return samples.cpu()
+        mu = mu.squeeze(0)                # (D,)
+        offsets = torch.linspace(-4*sigma, 4*sigma, steps=grid_size, device=device)
+        zs = []
+        for dx in offsets:
+            for dy in offsets:
+                z = mu.clone()
+                z[dims[0]] += dx
+                z[dims[1]] += dy
+                zs.append(z)
+        zs = torch.stack(zs, dim=0)      # (grid_size*grid_size, D)
+        samples = model.decode(zs)       # (grid_size*grid_size, C, H, W)
+        # reshape to grid
+        return samples.view(grid_size, grid_size, *samples.shape[1:]).cpu()
 
-def plot_reference_and_samples(ref_img, samples, save_path):
+def plot_grid_reference_and_samples(grid_samples, save_path):
     """
-    Display one row: [ reference | sample1 | sample2 | ... ]
+    Display and save a grid of images.
+    grid_samples: Tensor of shape (G, G, C, H, W).
     """
-    # combine into (1+N, C, H, W)
-    grid = torch.cat([ref_img.cpu(), samples], dim=0).numpy()
-    n = grid.shape[0]
-    fig, axes = plt.subplots(1, n, figsize=(2*n, 2))
-    for i, ax in enumerate(axes):
-        img = np.transpose(grid[i], (1,2,0))
-        ax.imshow(img)
-        ax.axis("off")
+    G = grid_samples.shape[0]
+    C, H, W = grid_samples.shape[2:]
+    fig, axes = plt.subplots(G, G, figsize=(2*G, 2*G))
+    for i in range(G):
+        for j in range(G):
+            img = grid_samples[i, j].numpy().transpose(1, 2, 0)
+            axes[i, j].imshow(img)
+            axes[i, j].axis("off")
     plt.tight_layout()
     plt.savefig(save_path)
     print(f"[Plot] saved to {save_path}")
@@ -59,7 +71,6 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config",      required=True, help="YAML config path")
     parser.add_argument("--ref_idx",     type=int,   default=None, help="Global index of reference image")
-    parser.add_argument("--num_samples", type=int,   default=None, help="How many variations to sample")
     parser.add_argument("--sigma",       type=float, default=None, help="Std-dev around reference latent")
     args = parser.parse_args()
 
@@ -81,8 +92,6 @@ def main():
     ref_img, ref_id = val_ds[ref_idx]
     ref_img = ref_img.unsqueeze(0)  # add batch dim
 
-    num_samples = args.num_samples \
-        if args.num_samples is not None else sample_cfg.get("num_samples", 8)
     sigma = args.sigma \
         if args.sigma is not None else sample_cfg.get("sigma", 0.1)
 
@@ -107,18 +116,17 @@ def main():
     model.load_state_dict(state)
     model.eval()
 
-    # --- Generate variations ------------------------------------------------
-    samples = generate_variations(model, ref_img, num_samples, sigma)
+    # --- Generate grid of latent traversals around reference image ----
+    grid_size = 9
+    grid_samples = generate_grid_variations(model, ref_img, sigma, grid_size=grid_size)
 
-    # --- Plot + save --------------------------------------------------------
-    prefix = "VAE+" if use_adv else "VAE"
-    base   = os.path.splitext(os.path.basename(ckpt_path))[0]
-    out_dir = sample_cfg.get("output_dir", "generated_samples")
+    # --- Plot + save grid ----
+    prefix_plot = f"VAE+_{latent_dim}_near_traversal" if use_adv else f"VAE_{latent_dim}_near_traversal"
+    out_dir = os.path.join("experiments", "plots")
     os.makedirs(out_dir, exist_ok=True)
-
-    fname = f"{prefix}_{base}_ref{ref_id}_σ{sigma}_n{num_samples}.png"
+    fname = f"{prefix_plot}_ref{ref_id}_grid{grid_size}.png"
     save_path = os.path.join(out_dir, fname)
-    plot_reference_and_samples(ref_img, samples, save_path)
+    plot_grid_reference_and_samples(grid_samples, save_path)
 
 if __name__ == "__main__":
     main()
