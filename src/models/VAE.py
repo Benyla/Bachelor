@@ -99,11 +99,8 @@ class VAE(nn.Module):
         x_rec = self.decode(z)
         return x_rec, mu, logvar, z
     
-    def _gamma(self, layer_idx: int): # custom gamma function to follow lafarge2019capturing
-        L = len(self.discriminator.layers)
-        delta = 1.0/L
-        t = self.iter / self.T
-        return min(max((t - layer_idx * delta) / delta, 0.0), 1.0)
+    def _gamma(self, layer_idx: int): # gamma function to follow lafarge2019capturing
+        return min(max((self.iter/self.T) - layer_idx, 0.0), 1.0)
 
     def loss(self, x, x_rec, mu, logvar):
 
