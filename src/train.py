@@ -126,6 +126,14 @@ def train(config, logger, train_loader, val_loader):
         logger.log_metrics({"train/clipping_vae": clipping_counter["vae"], "train/clipping_d": clipping_counter["d"]}, step=epoch)
         logger.log_images(x, x_rec, step=epoch, prefix="train")
         logger.log_images(val_x, val_x_rec, step=epoch, prefix="val")
+        # Log progressive feature-matching weights for each discriminator layer
+        if config["model"].get("use_adv", False):
+            num_layers = len(model.discriminator.layers)
+            gamma_dict = {}
+            for i in range(num_layers):
+                gamma_value = model._gamma(i)
+                gamma_dict[f"train/gamma_layer_{i}"] = gamma_value
+            logger.log_metrics(gamma_dict, step=epoch)
         save_model(logger, model, epoch, optimizer=optimizer_VAE, d_optimizer=optimizer_D if config["model"].get("use_adv", False) else None, config=config)
 
     logger.stop()
@@ -160,4 +168,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
