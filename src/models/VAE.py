@@ -46,6 +46,7 @@ class VAE(nn.Module):
         self.use_adv = use_adv
         self.overfit = overfit
         self.latent_dim = latent_dim
+        self.inchannels = in_channels
         print(f"[Model Init] use_adv={self.use_adv}, overfit={self.overfit}")
 
         # Encoder: 4 convolutional layers  → flatten
