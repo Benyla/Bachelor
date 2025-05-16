@@ -45,6 +45,7 @@ class VAE(nn.Module):
         self.iter = 0
         self.use_adv = use_adv
         self.overfit = overfit
+        self.latent_dim = latent_dim
         print(f"[Model Init] use_adv={self.use_adv}, overfit={self.overfit}")
 
         # Encoder: 4 convolutional layers  → flatten
