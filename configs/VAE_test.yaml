@@ -9,10 +9,14 @@ training:
   epochs: 10
   batch_size: 64
   lr_VAE: 0.001
+  lr_D: 0.01
 
 model:
   in_channels: 3
   latent_dim: 256
+  use_adv: True
+  beta: 2.0
+  T: 16687
   overfit: False
 
 data:
