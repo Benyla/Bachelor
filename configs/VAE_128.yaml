@@ -7,12 +7,12 @@ experiment:
 
 training:
   epochs: 50
-  batch_size: 128
+  batch_size: 256
   lr_VAE: 0.001
 
 model:
   in_channels: 3
-  latent_dim: 256
+  latent_dim: 128
   overfit: False
 
 data:
