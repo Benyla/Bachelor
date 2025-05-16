@@ -6,7 +6,7 @@ experiment:
   tags: "cell_vae -- full_data"
 
 training:
-  epochs: 500
+  epochs: 10
   batch_size: 64
   lr_VAE: 0.001
 

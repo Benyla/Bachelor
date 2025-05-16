@@ -27,6 +27,7 @@ def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=No
         else f"VAE_{latent_dim}_epoch_{epoch}.pth"
     )
 
+
     save_path = os.path.join(save_dir, output_filename)
     torch.save(checkpoint, save_path)
         
