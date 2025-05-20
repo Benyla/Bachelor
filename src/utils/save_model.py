@@ -1,6 +1,7 @@
 import torch
 import os
 import copy
+import re
 
 def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=None):
 
@@ -20,15 +21,26 @@ def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=No
         checkpoint["d_optimizer_state_dict"] = d_optimizer.state_dict()
 
     latent_dim = config["model"].get("latent_dim", 256)
+    use_adv = config["model"].get("use_adv", False)
 
-    output_filename = (
-        f"VAE+_{latent_dim}_epoch_{epoch}.pth"
-        if config["model"].get("use_adv", False)
-        else f"VAE_{latent_dim}_epoch_{epoch}.pth"
-    )
-
-
+    # Define filename pattern
+    prefix = "VAE+" if use_adv else "VAE"
+    output_filename = f"{prefix}_{latent_dim}_epoch_{epoch}.pth"
     save_path = os.path.join(save_dir, output_filename)
-    torch.save(checkpoint, save_path)
-        
+
+    torch.save(checkpoint, save_path) 
     print(f"Checkpoint saved to {save_path}")
+
+    # Clean up older checkpoints not on a multiple of 10
+    for fname in os.listdir(save_dir):
+        if fname.startswith(prefix) and fname.endswith(".pth"):
+            match = re.search(r"epoch_(\d+)", fname)
+            if match:
+                ep = int(match.group(1))
+                if ep != epoch and ep % 10 != 0:
+                    path_to_delete = os.path.join(save_dir, fname)
+                    try:
+                        os.remove(path_to_delete)
+                        print(f"Deleted old checkpoint: {path_to_delete}")
+                    except Exception as e:
+                        print(f"Could not delete {path_to_delete}: {e}")

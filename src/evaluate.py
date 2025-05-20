@@ -1,5 +1,6 @@
 import os
 import torch
+import re
 
 def validate(model, val_loader, device, config=None, epoch=None):
     """
@@ -39,15 +40,30 @@ def validate(model, val_loader, device, config=None, epoch=None):
     latent_dim = config["model"]["latent_dim"]
     if epoch is not None:
         os.makedirs("latent_codes", exist_ok=True)
-        output_filename = (
-            f"latent_codes/VAE+_{latent_dim}_latent_epoch_{epoch}.pth"
-            if config["model"].get("use_adv", False)
-            else f"latent_codes/VAE_{latent_dim}_latent_epoch_{epoch}.pth"
-        )
+
+        use_adv = config["model"].get("use_adv", False)
+        prefix = "VAE+" if use_adv else "VAE"
+        filename = f"{prefix}_{latent_dim}_latent_epoch_{epoch}.pth"
+        output_path = os.path.join("latent_codes", filename)
+
         torch.save({
             "latent_codes": torch.cat(latents, dim=0),
             "ids": ids_all
-        }, output_filename)
+        }, output_path)
         print(f"[Validation] Saved latent codes for epoch {epoch}")
+
+        # Delete older latent codes, keeping only current and milestones
+        for fname in os.listdir("latent_codes"):
+            if fname.startswith(prefix) and fname.endswith(".pth"):
+                match = re.search(r"epoch_(\d+)", fname)
+                if match:
+                    ep = int(match.group(1))
+                    if ep != epoch and ep % 10 != 0:
+                        path_to_delete = os.path.join("latent_codes", fname)
+                        try:
+                            os.remove(path_to_delete)
+                            print(f"Deleted old latent code file: {path_to_delete}")
+                        except Exception as e:
+                            print(f"Could not delete {path_to_delete}: {e}")
 
     return avg_loss["total"], avg_loss["recon"], avg_loss["kl"], avg_loss["adv"], x, x_rec
