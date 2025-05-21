@@ -36,6 +36,11 @@ def validate(model, val_loader, device, config=None, epoch=None):
     scale = len(val_loader) * batch_size
     avg_loss = {k: v / scale for k, v in loss_acc.items()}
 
+    use_adv = config["model"].get("use_adv", False)
+    prefix = "VAE+" if use_adv else "VAE"
+    filename = f"{prefix}_{latent_dim}_latent_epoch_{epoch}.pth"
+    output_path = os.path.join("latent_codes", filename)
+
     # Delete older latent codes, keeping only current and milestones
     for fname in os.listdir("latent_codes"):
         if fname.startswith(prefix) and fname.endswith(".pth"):
@@ -54,11 +59,6 @@ def validate(model, val_loader, device, config=None, epoch=None):
     latent_dim = config["model"]["latent_dim"]
     if epoch is not None:
         os.makedirs("latent_codes", exist_ok=True)
-
-        use_adv = config["model"].get("use_adv", False)
-        prefix = "VAE+" if use_adv else "VAE"
-        filename = f"{prefix}_{latent_dim}_latent_epoch_{epoch}.pth"
-        output_path = os.path.join("latent_codes", filename)
 
         torch.save({
             "latent_codes": torch.cat(latents, dim=0),
