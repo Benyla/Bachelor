@@ -36,6 +36,7 @@ def validate(model, val_loader, device, config=None, epoch=None):
     scale = len(val_loader) * batch_size
     avg_loss = {k: v / scale for k, v in loss_acc.items()}
 
+    latent_dim = config["model"]["latent_dim"]
     use_adv = config["model"].get("use_adv", False)
     prefix = "VAE+" if use_adv else "VAE"
     filename = f"{prefix}_{latent_dim}_latent_epoch_{epoch}.pth"
@@ -56,7 +57,6 @@ def validate(model, val_loader, device, config=None, epoch=None):
                         print(f"Could not delete {path_to_delete}: {e}")
 
     # Save latent codes and IDs
-    latent_dim = config["model"]["latent_dim"]
     if epoch is not None:
         os.makedirs("latent_codes", exist_ok=True)
 
