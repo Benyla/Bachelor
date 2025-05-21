@@ -36,6 +36,20 @@ def validate(model, val_loader, device, config=None, epoch=None):
     scale = len(val_loader) * batch_size
     avg_loss = {k: v / scale for k, v in loss_acc.items()}
 
+    # Delete older latent codes, keeping only current and milestones
+    for fname in os.listdir("latent_codes"):
+        if fname.startswith(prefix) and fname.endswith(".pth"):
+            match = re.search(r"epoch_(\d+)", fname)
+            if match:
+                ep = int(match.group(1))
+                if ep not in {epoch, 10, 20, 30, 40, 49}:
+                    path_to_delete = os.path.join("latent_codes", fname)
+                    try:
+                        os.remove(path_to_delete)
+                        print(f"Deleted old latent code file: {path_to_delete}")
+                    except Exception as e:
+                        print(f"Could not delete {path_to_delete}: {e}")
+
     # Save latent codes and IDs
     latent_dim = config["model"]["latent_dim"]
     if epoch is not None:
@@ -51,19 +65,5 @@ def validate(model, val_loader, device, config=None, epoch=None):
             "ids": ids_all
         }, output_path)
         print(f"[Validation] Saved latent codes for epoch {epoch}")
-
-        # Delete older latent codes, keeping only current and milestones
-        for fname in os.listdir("latent_codes"):
-            if fname.startswith(prefix) and fname.endswith(".pth"):
-                match = re.search(r"epoch_(\d+)", fname)
-                if match:
-                    ep = int(match.group(1))
-                    if ep != epoch and ep % 10 != 0:
-                        path_to_delete = os.path.join("latent_codes", fname)
-                        try:
-                            os.remove(path_to_delete)
-                            print(f"Deleted old latent code file: {path_to_delete}")
-                        except Exception as e:
-                            print(f"Could not delete {path_to_delete}: {e}")
 
     return avg_loss["total"], avg_loss["recon"], avg_loss["kl"], avg_loss["adv"], x, x_rec

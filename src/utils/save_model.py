@@ -28,19 +28,19 @@ def save_model(logger, model, epoch, optimizer=None, d_optimizer=None, config=No
     output_filename = f"{prefix}_{latent_dim}_epoch_{epoch}.pth"
     save_path = os.path.join(save_dir, output_filename)
 
-    torch.save(checkpoint, save_path) 
-    print(f"Checkpoint saved to {save_path}")
-
     # Clean up older checkpoints not on a multiple of 10
     for fname in os.listdir(save_dir):
         if fname.startswith(prefix) and fname.endswith(".pth"):
             match = re.search(r"epoch_(\d+)", fname)
             if match:
                 ep = int(match.group(1))
-                if ep != epoch and ep % 10 != 0:
+                if ep not in {epoch, 10, 20, 30, 40, 49}:
                     path_to_delete = os.path.join(save_dir, fname)
                     try:
                         os.remove(path_to_delete)
                         print(f"Deleted old checkpoint: {path_to_delete}")
                     except Exception as e:
                         print(f"Could not delete {path_to_delete}: {e}")
+
+    torch.save(checkpoint, save_path) 
+    print(f"Checkpoint saved to {save_path}")
