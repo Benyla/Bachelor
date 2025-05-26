@@ -43,8 +43,8 @@ def main():
     val_files = val_files[:100]
     ids_100 = [os.path.splitext(os.path.basename(p))[0] for p in val_files]
     print("Plotting the following image IDs:")
-    for fid in ids_100:
-        print(fid)
+    for i, fid in enumerate(ids_100, 1):
+        print(f"{i}: {fid}")
 
     # 5) load images into array
     images = [np.load(path) for path in val_files]  # assumes each is a 2D array
@@ -55,7 +55,10 @@ def main():
         ax.imshow(img, cmap="gray")
         ax.axis("off")
     plt.tight_layout()
-    plt.show()
+    os.makedirs("experiments/plots", exist_ok=True)
+    plot_path = os.path.join("experiments/plots", f"val_grid_{args.moa or 'all'}.png")
+    plt.savefig(plot_path)
+    print(f"[INFO] Saved plot to {plot_path}")
 
 
 if __name__ == "__main__":
