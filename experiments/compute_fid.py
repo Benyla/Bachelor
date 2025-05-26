@@ -97,9 +97,13 @@ def main():
     # Load config and model
     config = load_config(args.config)
     config['model']['checkpoint_path'] = args.model_path
+    latent_dim = config['model']['latent_dim']
+    use_adv = config['model'].get('use_adv', False)
+    params = {'latent_dims': latent_dim, 'use_adv': use_adv}
     vae = VAE(
         in_channels=config['model']['in_channels'],
-        latent_dim=config['model']['latent_dim']
+        latent_dim=latent_dim,
+        use_adv=use_adv
     ).to(device)
     ckpt = torch.load(args.model_path, map_location=device)
     vae.load_state_dict(ckpt['model_state_dict'])
@@ -143,7 +147,7 @@ def main():
 
     print("[STEP] Generating images...")
     t1 = time.time()
-    gen_images = generate_images(vae, num_samples, config['model']['latent_dim'], device, args.batch_size)
+    gen_images = generate_images(vae, num_samples, latent_dim, device, args.batch_size)
     print(f"[DONE] Generated {len(gen_images)} images in {time.time() - t1:.1f}s")
     gen_loader = DataLoader(TensorDataset(gen_images), batch_size=args.batch_size)
 
@@ -170,6 +174,12 @@ def main():
 
     print(f'[INFO] FID score: {fid_value:.6f}')
     print(f'[INFO] Saved FID score to {out_file}')
+
+    params_file = os.path.join(args.output, f'fid_params.txt')
+    with open(params_file, 'w') as f:
+        for k, v in params.items():
+            f.write(f"{k}: {v}\n")
+    print(f'[INFO] Saved FID parameters to {params_file}')
 
 if __name__ == '__main__':
     main()
