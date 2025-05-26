@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 import numpy as np
 import matplotlib.pyplot as plt
 from src.utils.data_loader import get_data
