@@ -6,8 +6,8 @@ import argparse
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.config_loader import load_config
-from utils.data_loader import get_data, SingleCellDataset
+from src.utils.config_loader import load_config
+from src.utils.data_loader import get_data, SingleCellDataset
 
 def main():
     p = argparse.ArgumentParser(description="Plot first 100 val images (10×10) with optional MoA filter")
