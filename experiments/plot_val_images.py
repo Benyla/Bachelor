@@ -13,11 +13,15 @@ def main():
     val_files = val_files[:100]
     print(f"[INFO] Plotting {len(val_files)} images from val set.")
 
+
     # Load images
     images = []
     for path in val_files:
         npz = np.load(path)
+        print(f"[DEBUG] Loaded file: {path}, type: {type(npz)}")
+        print(f"[DEBUG] npz.files: {npz.files}")
         img = npz[npz.files[0]]
+        print(f"[DEBUG] Extracted img type: {type(img)}, dtype: {getattr(img, 'dtype', 'N/A')}, shape: {getattr(img, 'shape', 'N/A')}")
         if img.shape[0] == 3:
             img = np.transpose(img, (1,2,0))  # To (64,64,3)
         images.append(img)
