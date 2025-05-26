@@ -16,7 +16,8 @@ def main():
     # Load images
     images = []
     for path in val_files:
-        img = np.load(path)  # Expect shape (3,64,64)
+        npz = np.load(path)
+        img = npz[npz.files[0]]
         if img.shape[0] == 3:
             img = np.transpose(img, (1,2,0))  # To (64,64,3)
         images.append(img)
