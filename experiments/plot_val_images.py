@@ -2,6 +2,7 @@
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
 from src.utils.data_loader import get_data
 
@@ -17,13 +18,16 @@ def main():
     # Load images
     images = []
     for path in val_files:
-        npz = np.load(path)
-        print(f"[DEBUG] Loaded file: {path}, type: {type(npz)}")
-        print(f"[DEBUG] npz.files: {npz.files}")
-        img = npz[npz.files[0]]
-        print(f"[DEBUG] Extracted img type: {type(img)}, dtype: {getattr(img, 'dtype', 'N/A')}, shape: {getattr(img, 'shape', 'N/A')}")
+        data = torch.load(path)
+        print(f"[DEBUG] Loaded file: {path}, type: {type(data)}")
+        if isinstance(data, torch.Tensor):
+            img = data.numpy()
+        elif isinstance(data, dict):
+            img = data['image'].numpy()  # Change 'image' if a different key is used
+        else:
+            raise ValueError(f"Unsupported data format in {path}")
         if img.shape[0] == 3:
-            img = np.transpose(img, (1,2,0))  # To (64,64,3)
+            img = np.transpose(img, (1,2,0))  # Convert (3,64,64) to (64,64,3)
         images.append(img)
 
     # Plot 10x10 grid
