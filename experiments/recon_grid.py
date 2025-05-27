@@ -92,6 +92,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
 
 # Adjust layout and save
 out_path = 'experiments/plots/reconstructions_grid.png'
+plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0, hspace=0)
 plt.savefig(out_path, dpi=300)
 print(f"Saved reconstruction grid to {out_path}")
 plt.show()
