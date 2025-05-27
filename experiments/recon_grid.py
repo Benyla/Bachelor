@@ -24,8 +24,16 @@ epochs = [10, 20, 30, 40, 49]
 # Load validation file paths
 _, val_files, _ = get_data()
 
-# Load and preprocess the selected image
-img = val_files[IMAGE_IDX].unsqueeze(0).to(DEVICE)
+# Load and preprocess the selected image from file
+path = val_files[IMAGE_IDX]
+data = torch.load(path)
+if isinstance(data, torch.Tensor):
+    img = data
+elif isinstance(data, dict):
+    img = data['image']  # Change 'image' if necessary
+else:
+    raise ValueError(f"Unsupported data format in {path}")
+img = img.unsqueeze(0).to(DEVICE)
 
 # Prepare matplotlib grid
 n_rows = len(models)
