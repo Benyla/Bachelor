@@ -59,7 +59,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
 
         # Forward pass
         with torch.no_grad():
-            recon, mu, logvar = model(img)
+            recon, mu, logvar, _ = model(img)
         # Move to CPU and remove batch dim
         recon_img = recon.cpu().squeeze()
         # If multichannel (e.g., 3xHxW), permute dims
