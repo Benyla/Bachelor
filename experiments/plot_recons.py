@@ -76,10 +76,8 @@ def main():
     # 5) Plot grid
     n = len(args.indices)
     fig, axes = plt.subplots(2, n, figsize=(n * 3, 2 * 3))
-    for ax in axes[0]:
-        ax.set_title("Original", fontsize=12)
-    for ax in axes[1]:
-        ax.set_title("Reconstruction", fontsize=12)
+    axes[0, 0].set_ylabel('Original', fontsize=12, rotation=90, labelpad=10)
+    axes[1, 0].set_ylabel('Reconstruction', fontsize=12, rotation=90, labelpad=10)
     for col, idx in enumerate(args.indices):
         # Original
         orig = originals[col]
@@ -87,7 +85,6 @@ def main():
         axo = axes[0, col]
         axo.imshow(disp_o, cmap="gray" if disp_o.ndim == 2 else None)
         axo.axis("off")
-        axo.set_title(f"Index {idx}", fontsize=10)
 
         # Reconstruction
         rec = recons[col]
@@ -100,6 +97,7 @@ def main():
     os.makedirs("experiments/plots", exist_ok=True)
     out_path = os.path.join("experiments/plots", "reconstructions.png")
     plt.savefig(out_path, dpi=300)
+    plt.subplots_adjust(left=0.15, right=0.99, top=0.99, bottom=0.01, wspace=0.02, hspace=0.02)
     print(f"Saved figure to {out_path}")
 
 if __name__ == "__main__":
