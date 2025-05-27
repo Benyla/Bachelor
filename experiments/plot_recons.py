@@ -76,6 +76,10 @@ def main():
     # 5) Plot grid
     n = len(args.indices)
     fig, axes = plt.subplots(2, n, figsize=(n * 3, 2 * 3))
+    for ax in axes[0]:
+        ax.set_title("Original", fontsize=12)
+    for ax in axes[1]:
+        ax.set_title("Reconstruction", fontsize=12)
     for col, idx in enumerate(args.indices):
         # Original
         orig = originals[col]
@@ -93,7 +97,6 @@ def main():
         axr.axis("off")
 
     # 6) Tweak spacing
-    plt.subplots_adjust(left=0, right=1, top=1, bottom=0, wspace=0.05, hspace=0.05)
     os.makedirs("experiments/plots", exist_ok=True)
     out_path = os.path.join("experiments/plots", "reconstructions.png")
     plt.savefig(out_path, dpi=300)
