@@ -76,6 +76,8 @@ def main():
     # 5) Plot grid
     n = len(args.indices)
     fig, axes = plt.subplots(2, n, figsize=(n * 3, 2 * 3))
+    # Add overall title
+    fig.suptitle(f"Reconstruction of {n} images", fontsize=16)
     fig.text(0.04, 0.75, 'Original', ha='center', va='center', fontsize=12, rotation=90)
     fig.text(0.04, 0.25, 'Reconstruction', ha='center', va='center', fontsize=12, rotation=90)
     for col, idx in enumerate(args.indices):
@@ -92,10 +94,13 @@ def main():
         axr = axes[1, col]
         axr.imshow(disp_r, cmap="gray" if disp_r.ndim == 2 else None)
         axr.axis("off")
+        axr.set_xlabel(f"Image {col}", fontsize=12)
 
     # 6) Tweak spacing
     os.makedirs("experiments/plots", exist_ok=True)
     out_path = os.path.join("experiments/plots", "reconstructions.png")
+    # Apply default spacing with room for the suptitle
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.savefig(out_path, dpi=300)
     print(f"Saved figure to {out_path}")
 
