@@ -80,7 +80,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
 
 # Adjust layout and save
 plt.tight_layout()
-out_path = 'plots/reconstructions_grid.png'
+out_path = 'experiments/plots/reconstructions_grid.png'
 plt.savefig(out_path, dpi=300)
 print(f"Saved reconstruction grid to {out_path}")
 plt.show()
