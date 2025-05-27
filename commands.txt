@@ -31,3 +31,8 @@ PYTHONPATH=$(pwd) python experiments/sample_generation.py \
   --ref_idx 42 \
   --num_samples 8 \
   --sigma 0.1
+
+for plot_recons.py
+PYTHONPATH=$(pwd) python experiments/plot_recons.py \
+  --model VAE+_256_epoch_49.pth \
+  --indices 4 12 36 42 52

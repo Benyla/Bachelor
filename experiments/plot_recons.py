@@ -76,8 +76,8 @@ def main():
     # 5) Plot grid
     n = len(args.indices)
     fig, axes = plt.subplots(2, n, figsize=(n * 3, 2 * 3))
-    axes[0, 0].set_ylabel('Original')
-    axes[1, 0].set_ylabel('Reconstruction')
+    fig.text(0.04, 0.75, 'Original', ha='center', va='center', fontsize=12, rotation=90)
+    fig.text(0.04, 0.25, 'Reconstruction', ha='center', va='center', fontsize=12, rotation=90)
     for col, idx in enumerate(args.indices):
         # Original
         orig = originals[col]
