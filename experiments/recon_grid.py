@@ -2,14 +2,12 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 import torch
 import matplotlib.pyplot as plt
-from torchvision import transforms
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data
-from PIL import Image
 
 # Configuration
 CHECKPOINT_DIR = 'trained_models'          # directory with your .pth files
-IMAGE_IDX      = 61                        # index of the image in the val set
+IMAGE_IDX      = 60                        # index of the image in the val set
 DEVICE         = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define the models you trained
@@ -22,16 +20,12 @@ models = {
 # Epoch checkpoints you saved
 epochs = [10, 20, 30, 40, 49]
 
-# Prepare transform
-transform = transforms.Compose([transforms.ToTensor()])
 
 # Load validation file paths
 _, val_files, _ = get_data()
 
 # Load and preprocess the selected image
-img_path = val_files[IMAGE_IDX]
-img_pil = Image.open(img_path).convert('RGB')
-img = transform(img_pil).unsqueeze(0).to(DEVICE)
+img = val_files[IMAGE_IDX].unsqueeze(0).to(DEVICE)
 
 # Prepare matplotlib grid
 n_rows = len(models)
