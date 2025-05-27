@@ -40,6 +40,10 @@ n_rows = len(models)
 n_cols = len(epochs) + 1  # extra column for original image
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
+# Add model labels to the left of each row
+for i, model_name in enumerate(models.keys()):
+    fig.text(0.02, (n_rows - i - 0.5) / n_rows, model_name, ha='right', va='center', fontsize=12)
+
 for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
     for j, epoch in enumerate(epochs):
         # Instantiate VAE with appropriate adversarial flag
