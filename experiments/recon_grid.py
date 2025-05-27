@@ -1,9 +1,8 @@
-import os
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 import torch
 import matplotlib.pyplot as plt
 from torchvision import transforms
- 
-
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data
 from PIL import Image
