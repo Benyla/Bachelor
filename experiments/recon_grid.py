@@ -50,7 +50,10 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
             f"{model_name}_epoch_{epoch}.pth"
         )
         state = torch.load(ckpt_path, map_location=DEVICE)
-        model.load_state_dict(state)
+        if 'model_state_dict' in state:
+            model.load_state_dict(state['model_state_dict'])
+        else:
+            model.load_state_dict(state)
         model.to(DEVICE)
         model.eval()
 
