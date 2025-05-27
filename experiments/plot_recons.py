@@ -77,29 +77,31 @@ def main():
     n = len(args.indices)
     fig, axes = plt.subplots(2, n, figsize=(n * 3, 2 * 3))
     # Add overall title
-    fig.suptitle(f"Reconstruction of {n} images", fontsize=16, y=0.95)
-    axes[0, 0].set_ylabel('Original', fontsize=12, labelpad=10)
-    axes[1, 0].set_ylabel('Reconstruction', fontsize=12, labelpad=10)
+    fig.suptitle(f"Reconstruction of {n} images", fontsize=16)
+    axes[0, 0].set_ylabel('Original', rotation=90, fontsize=12, labelpad=10)
+    axes[1, 0].set_ylabel('Reconstructed', rotation=90, fontsize=12, labelpad=10)
     for col, idx in enumerate(args.indices):
         # Original
         orig = originals[col]
         disp_o = orig.permute(1,2,0) if orig.ndim == 3 else orig
         axo = axes[0, col]
         axo.imshow(disp_o, cmap="gray" if disp_o.ndim == 2 else None)
-        axo.axis("off")
+        axo.set_xticks([]); axo.set_yticks([])
+        for spine in axo.spines.values(): spine.set_visible(False)
 
         # Reconstruction
         rec = recons[col]
         disp_r = rec.permute(1,2,0) if rec.ndim == 3 else rec
         axr = axes[1, col]
         axr.imshow(disp_r, cmap="gray" if disp_r.ndim == 2 else None)
-        axr.axis("off")
+        axr.set_xticks([]); axr.set_yticks([])
+        for spine in axr.spines.values(): spine.set_visible(False)
 
     # 6) Tweak spacing
     os.makedirs("experiments/plots", exist_ok=True)
     out_path = os.path.join("experiments/plots", "reconstructions.png")
-    # Apply default spacing with room for the suptitle
-    plt.tight_layout(rect=[0.15, 0, 1, 0.9])
+    # Apply spacing like test.py
+    plt.subplots_adjust(left=0.08, right=0.98, top=0.92, bottom=0.05, wspace=0.1, hspace=0.1)
     plt.savefig(out_path, dpi=300)
     print(f"Saved figure to {out_path}")
 
