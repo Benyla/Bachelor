@@ -42,7 +42,7 @@ fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
 # Add model labels to the left of each row
 for i, model_name in enumerate(models.keys()):
-    fig.text(0.02, (n_rows - i - 0.5) / n_rows, model_name, ha='right', va='center', fontsize=12)
+    fig.text(-0.05, (n_rows - i - 0.5) / n_rows, model_name, ha='left', va='center', fontsize=18, weight='bold')
 
 for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
     for j, epoch in enumerate(epochs):
@@ -96,7 +96,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
                 ax_orig.set_title("Original", fontsize=12)
 
 # Adjust layout and save
-plt.tight_layout()
+plt.tight_layout(rect=[0.1, 0, 1, 1])  # Leave space for labels
 out_path = 'experiments/plots/reconstructions_grid.png'
 plt.savefig(out_path, dpi=300)
 print(f"Saved reconstruction grid to {out_path}")
