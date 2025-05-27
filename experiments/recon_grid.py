@@ -7,15 +7,15 @@ from src.utils.data_loader import get_data
 
 # Configuration
 CHECKPOINT_DIR = 'trained_models'          # directory with your .pth files
-IMAGE_IDX      = 60                        # index of the image in the val set
+IMAGE_IDX      = 1                       # index of the image in the val set
 DEVICE         = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # Define the models you trained
 models = {
-    'VAE+_256': (True, 256),
-    'VAE+_128': (True, 128),
-    'VAE_256':  (False, 256),
     'VAE_128':  (False, 128),
+    'VAE_256':  (False, 256),
+    'VAE+_128': (True, 128),
+    'VAE+_256': (True, 256),
 }
 # Epoch checkpoints you saved
 epochs = [10, 20, 30, 40, 49]
@@ -37,7 +37,7 @@ img = img.unsqueeze(0).to(DEVICE)
 
 # Prepare matplotlib grid
 n_rows = len(models)
-n_cols = len(epochs)
+n_cols = len(epochs) + 1  # extra column for original image
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
 for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
@@ -77,6 +77,19 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
             ax.set_title(f"Epoch {epoch}", fontsize=12)
         if j == 0:
             ax.set_ylabel(model_name, fontsize=12)
+
+        # After final epoch, plot the original image in the last column
+        if j == len(epochs) - 1:
+            ax_orig = axes[i, len(epochs)]
+            orig = img.cpu().squeeze()
+            if orig.ndim == 3:
+                display_orig = orig.permute(1, 2, 0)
+            else:
+                display_orig = orig
+            ax_orig.imshow(display_orig, cmap='gray' if display_orig.ndim == 2 else None)
+            ax_orig.axis('off')
+            if i == 0:
+                ax_orig.set_title("Original", fontsize=12)
 
 # Adjust layout and save
 plt.tight_layout()
