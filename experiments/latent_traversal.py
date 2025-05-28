@@ -93,7 +93,7 @@ def main():
     ctrl_df = df[df['moa'] == args.control_class]
     if ctrl_df.empty:
         raise ValueError(f"No samples found for control class '{args.control_class}'")
-    z_ctrl = ctrl_df.iloc[300][[c for c in df.columns if c.startswith('z')]].values
+    z_ctrl = ctrl_df.iloc[5][[c for c in df.columns if c.startswith('z')]].values
 
     # Select target latent (first of target class)
     tgt_df = df[df['moa'] == args.target_class]
