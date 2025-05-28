@@ -54,7 +54,7 @@ def generate_grid_variations(model, ref_img, sigma, grid_size=9, dims=None):
         # reshape to grid
         return samples.view(grid_size, grid_size, *samples.shape[1:]).cpu()
 
-def plot_grid_reference_and_samples(grid_samples, ref_img, save_path):
+def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None):
     """
     Display and save a grid of images.
     grid_samples: Tensor of shape (G, G, C, H, W).
@@ -72,7 +72,14 @@ def plot_grid_reference_and_samples(grid_samples, ref_img, save_path):
             img = grid_samples[i, j].numpy().transpose(1, 2, 0)
             axes[i, j].imshow(img)
             axes[i, j].axis("off")
-    plt.tight_layout()
+
+    # Add axis labels and title
+    if dims is not None:
+        fig.supxlabel(f'Offset in latent dim {dims[1]} (σ)', fontsize=12)
+        fig.supylabel(f'Offset in latent dim {dims[0]} (σ)', fontsize=12)
+    fig.suptitle('Latent Space Traversal Grid', fontsize=16)
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])
     plt.savefig(save_path)
     print(f"[Plot] saved to {save_path}")
 
@@ -172,7 +179,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     fname = f"{prefix_plot}_dims{dims[0]}-{dims[1]}_ref{ref_idx}_grid{grid_size}.png"
     save_path = os.path.join(out_dir, fname)
-    plot_grid_reference_and_samples(grid_samples, ref_img, save_path)
+    plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=dims)
 
 if __name__ == "__main__":
     main()

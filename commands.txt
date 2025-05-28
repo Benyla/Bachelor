@@ -28,8 +28,8 @@ PYTHONPATH=$(pwd) python experiments/latent_traversal.py \
 For sample_generation.py
 PYTHONPATH=$(pwd) python experiments/sample_generation.py \
   --config configs/VAE+_256.yaml \
-  --ref_idx 74 \
-  --sigma 0.3
+  --ref_idx 42 \
+  --sigma 0.5
 
 for plot_recons.py
 PYTHONPATH=$(pwd) python experiments/plot_recons.py \
