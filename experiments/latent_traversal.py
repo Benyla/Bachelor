@@ -99,7 +99,7 @@ def main():
     tgt_df = df[df['moa'] == args.target_class]
     if tgt_df.empty:
         raise ValueError(f"No samples found for target class '{args.target_class}'")
-    z_tgt = tgt_df.iloc[0][[c for c in df.columns if c.startswith('z')]].values
+    z_tgt = tgt_df.iloc[17][[c for c in df.columns if c.startswith('z')]].values
 
     # interpolate
     alphas = np.linspace(0, 1, args.steps)
