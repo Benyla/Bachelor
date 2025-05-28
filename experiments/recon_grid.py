@@ -41,7 +41,7 @@ n_cols = len(epochs) + 1
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
 # Overall title to match your first script
-fig.suptitle('Model Reconstructions as a Function of Training Time', fontsize=16)
+fig.suptitle('Model Reconstructions Across Epochs', fontsize=16)
 
 # Explicit y-axis labels for each model row
 axes[0, 0].set_ylabel('VAE_128', rotation=90, fontsize=12, labelpad=10)
