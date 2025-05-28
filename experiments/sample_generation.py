@@ -54,12 +54,11 @@ def generate_grid_variations(model, ref_img, sigma, grid_size=9, dims=None):
         # reshape to grid
         return samples.view(grid_size, grid_size, *samples.shape[1:]).cpu()
 
-def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None):
+def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None, sigma=None):
     """
     Display and save a grid of images.
     grid_samples: Tensor of shape (G, G, C, H, W).
     """
-    # Place original reference image in the center
     G = grid_samples.shape[0]
     center = G // 2
     orig = ref_img.squeeze(0).cpu().numpy().transpose(1, 2, 0)
@@ -67,19 +66,22 @@ def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None)
 
     C, H, W = grid_samples.shape[2:]
     fig, axes = plt.subplots(G, G, figsize=(2*G, 2*G))
+
+    # Plot images and optional offsets
     for i in range(G):
         for j in range(G):
             img = grid_samples[i, j].numpy().transpose(1, 2, 0)
             axes[i, j].imshow(img)
             axes[i, j].axis("off")
 
-    # Add axis labels and title
+    # Improved labels and title
     if dims is not None:
-        fig.supxlabel(f'Offset in latent dim {dims[1]} (σ)', fontsize=12)
-        fig.supylabel(f'Offset in latent dim {dims[0]} (σ)', fontsize=12)
-    fig.suptitle('Latent Space Traversal Grid', fontsize=16)
+        fig.supxlabel(f'Offset in latent dim {dims[1]} (σ={sigma})', fontsize=12)
+        fig.supylabel(f'Offset in latent dim {dims[0]} (σ={sigma})', fontsize=12)
+    fig.suptitle('Latent Space Traversal Grid', fontsize=16, y=0.92)
 
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
+    # Manual spacing adjustments
+    plt.subplots_adjust(left=0.08, right=0.92, top=0.92, bottom=0.08, wspace=0.02, hspace=0.02)
     plt.savefig(save_path)
     print(f"[Plot] saved to {save_path}")
 
@@ -180,7 +182,7 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     fname = f"{prefix_plot}_dims{dims[0]}-{dims[1]}_ref{ref_idx}_grid{grid_size}_sigma{sigma}.png"
     save_path = os.path.join(out_dir, fname)
-    plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=dims)
+    plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=dims, sigma=sigma)
 
 if __name__ == "__main__":
     main()
