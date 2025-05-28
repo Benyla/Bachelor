@@ -41,7 +41,7 @@ n_cols = len(epochs) + 1
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
 # Overall title to match your first script
-fig.suptitle('Model Reconstructions Across Epochs', fontsize=16)
+fig.suptitle('Model Reconstructions as a Function of Training Time', fontsize=16)
 
 # Explicit y-axis labels for each model row
 axes[0, 0].set_ylabel('VAE_128', rotation=90, fontsize=12, labelpad=10)
@@ -89,7 +89,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
 # Tweak spacing exactly like your working first script
 os.makedirs('experiments/plots', exist_ok=True)
 out_path = os.path.join('experiments/plots', 'reconstructions_grid.png')
-plt.subplots_adjust(left=0.08, right=0.98, top=0.92, bottom=0.05, wspace=0.1, hspace=0.1)
+plt.subplots_adjust(left=0.04, right=0.96, top=0.92, bottom=0.05, wspace=0.1, hspace=0.1)
 plt.savefig(out_path, dpi=300)
 print(f"Saved reconstruction grid to {out_path}")
 plt.show()
