@@ -23,8 +23,7 @@
 # activate environment ...
 source .venv/bin/activate
 PYTHONPATH=$(pwd) python experiments/compute_fid.py \
-  --config configs/config4.yaml \
-  --model-path trained_models/model_epoch_49.pth \
-  --batch-size 32 \
-  --num-samples 1000 \
+  --config configs/VAE+_128.yaml \
+  --model-path trained_models/VAE+_128_epoch_49.pth \
+  --batch-size 256 \
   --output experiments/fid
