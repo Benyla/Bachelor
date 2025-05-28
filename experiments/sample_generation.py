@@ -136,6 +136,7 @@ def main():
         stats = torch.load(stats_path)
         dims = stats["dims"]
     else:
+        print('computing_new')
         model_temp = VAE(in_ch, latent_dim, use_adv=use_adv).to(device)
         # Load trained weights into the temp model before encoding
         ckpt   = torch.load(ckpt_path, map_location=device)
