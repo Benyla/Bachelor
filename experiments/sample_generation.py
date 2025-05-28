@@ -177,7 +177,7 @@ def main():
     prefix_plot = f"VAE+_{latent_dim}_near_traversal" if use_adv else f"VAE_{latent_dim}_near_traversal"
     out_dir = os.path.join("experiments", "plots")
     os.makedirs(out_dir, exist_ok=True)
-    fname = f"{prefix_plot}_dims{dims[0]}-{dims[1]}_ref{ref_idx}_grid{grid_size}.png"
+    fname = f"{prefix_plot}_dims{dims[0]}-{dims[1]}_ref{ref_idx}_grid{grid_size}_sigma{sigma}.png"
     save_path = os.path.join(out_dir, fname)
     plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=dims)
 
