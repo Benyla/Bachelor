@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-import sys
-import os
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 import argparse
 
 import numpy as np
@@ -35,7 +35,7 @@ def parse_args():
     p.add_argument(
         "--metadata",
         type=str,
-        required=True,
+        default="/zhome/70/5/14854/nobackup/deeplearningf22/bbbc021/singlecell/metadata.csv",
         help="Path to metadata CSV (must contain Single_Cell_Image_Name and moa columns)"
     )
     return p.parse_args()
