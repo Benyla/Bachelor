@@ -40,6 +40,12 @@ n_rows = len(models)
 n_cols = len(epochs) + 1  # extra column for original image
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
 
+# Set explicit y-axis labels for each row
+axes[0, 0].set_ylabel('Original', rotation=90, fontsize=12, labelpad=10)
+axes[1, 0].set_ylabel('VAE_128', rotation=90, fontsize=12, labelpad=10)
+axes[2, 0].set_ylabel('VAE_256', rotation=90, fontsize=12, labelpad=10)
+axes[3, 0].set_ylabel('VAE+_128', rotation=90, fontsize=12, labelpad=10)
+axes[4, 0].set_ylabel('VAE+_256', rotation=90, fontsize=12, labelpad=10)
 
 for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
     for j, epoch in enumerate(epochs):
@@ -76,8 +82,6 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
         # Titles and labels
         if i == 0:
             ax.set_title(f"Epoch {epoch}", fontsize=12)
-        if j == 0:
-            ax.set_ylabel(model_name, rotation=90, fontsize=12, labelpad=15)
 
         # After final epoch, plot the original image in the last column
         if j == len(epochs) - 1:
