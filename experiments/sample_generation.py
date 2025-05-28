@@ -78,7 +78,7 @@ def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None,
     if dims is not None:
         fig.supxlabel(f'Offset in latent dim {dims[1]} (σ={sigma})', fontsize=12)
         fig.supylabel(f'Offset in latent dim {dims[0]} (σ={sigma})', fontsize=12)
-    fig.suptitle('Latent Space Traversal Grid', fontsize=16)
+    fig.suptitle('Latent Space Traversal Grid', fontsize=18)
 
     # Manual spacing adjustments
     plt.subplots_adjust(left=0.04, right=0.96, top=0.92, bottom=0.04, wspace=0.1, hspace=0.1)

@@ -38,7 +38,7 @@ img = img.unsqueeze(0).to(DEVICE)
 # Prepare matplotlib grid (4 rows × 6 columns: 5 epochs + 1 original)
 n_rows = len(models)
 n_cols = len(epochs) + 1
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3 - 3, n_rows * 3))
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3 - 3, n_rows * 3 - 2))
 
 # Overall title to match your first script
 fig.suptitle('Model Reconstructions Across Epochs', fontsize=16)
