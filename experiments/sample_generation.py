@@ -65,7 +65,7 @@ def plot_grid_reference_and_samples(grid_samples, ref_img, save_path, dims=None,
     grid_samples[center, center] = torch.from_numpy(orig).permute(2, 0, 1)
 
     C, H, W = grid_samples.shape[2:]
-    fig, axes = plt.subplots(G, G, figsize=(2*G, 2*G))
+    fig, axes = plt.subplots(G, G, figsize=(3*G, 3*G))
 
     # Plot images and optional offsets
     for i in range(G):
