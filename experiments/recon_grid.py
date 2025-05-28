@@ -38,7 +38,7 @@ img = img.unsqueeze(0).to(DEVICE)
 # Prepare matplotlib grid
 n_rows = len(models)
 n_cols = len(epochs) + 1  # extra column for original image
-fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3))
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3, n_rows * 3), constrained_layout=True)
 
 
 for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
@@ -76,6 +76,8 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
         # Titles and labels
         if i == 0:
             ax.set_title(f"Epoch {epoch}", fontsize=12)
+        if j == 0:
+            ax.set_ylabel(model_name, rotation=90, fontsize=12, labelpad=10)
 
         # After final epoch, plot the original image in the last column
         if j == len(epochs) - 1:
@@ -92,7 +94,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
 
 # Adjust layout and save
 out_path = 'experiments/plots/reconstructions_grid.png'
-plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0.05, wspace=0.05, hspace=0.05)
+# plt.subplots_adjust(left=0, right=1, top=0.95, bottom=0.05, wspace=0.05, hspace=0.05)
 plt.savefig(out_path, dpi=300)
 print(f"Saved reconstruction grid to {out_path}")
 plt.show()
