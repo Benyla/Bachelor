@@ -29,41 +29,34 @@ def decode_batch(model, zs, device):
         recon = model.decode(zs)
     return recon.cpu().numpy()
 
-def plot_interpolation_and_latent_changes(images, latent_changes, output, prefix):
+def plot_interpolation(images, output, prefix):
     """
-    Plot interpolation images (2x5) and latent dimension changes in one figure.
+    Plot a sequence of images in a row.
+    images: numpy array (N, C, H, W)
     """
     n = len(images)
     images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
-    
-    import matplotlib.gridspec as gridspec
-    fig = plt.figure(figsize=(15, 12))
-    gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
-    
-    # Create a grid for interpolation images
-    interp_gs = gridspec.GridSpecFromSubplotSpec(2, 5, subplot_spec=gs[:2])
-    for idx in range(n):
-        ax = fig.add_subplot(interp_gs[idx // 5, idx % 5])
-        img = images[idx]
-        ax.imshow(img)
-        ax.set_title(f'Step {idx+1}/{n}', fontsize=8)
-        ax.axis('off')
-    
-    # Plot latent changes
-    ax_latent = fig.add_subplot(gs[2])
-    dims = np.arange(len(latent_changes))
-    ax_latent.bar(dims, latent_changes)
-    ax_latent.set_xlabel('Latent Dimension')
-    ax_latent.set_ylabel('Absolute Change')
-    ax_latent.set_title('Absolute Changes per Latent Dimension')
-    
-    fig.suptitle(f'Latent Space Traversal and Dimension Changes: {prefix}', fontsize=16)
-    
+    rows, cols = 4, 5
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3, rows * 3))
+
+    idx = 0
+    for r in range(rows):
+        for c in range(cols):
+            ax = axes[r, c]
+            if idx < n:
+                img = images[idx]
+                ax.imshow(img)
+                ax.set_title(f'{idx+1}/{n}')
+            else:
+                ax.axis('off')
+            ax.axis('off')
+            idx += 1
+
     os.makedirs(output, exist_ok=True)
-    outpath = os.path.join(output, f'{prefix}_traversal_and_latent_changes.png')
-    plt.tight_layout()
-    plt.savefig(outpath, dpi=300)
-    print(f'[INFO] Saved combined figure to {outpath}')
+    outpath = os.path.join(output, f'{prefix}_traversal_VAE.png')
+    fig.tight_layout()
+    fig.savefig(outpath, dpi=300)
+    print(f'[INFO] Saved interpolation figure to {outpath}')
 
 
 def main():
@@ -72,7 +65,7 @@ def main():
     parser.add_argument('--model-path', type=str, required=True, help='VAE checkpoint .pth')
     parser.add_argument('--control-class', type=str, required=True, help='MOA label for control cells')
     parser.add_argument('--target-class', type=str, required=True, help='MOA label for target cells')
-    parser.add_argument('--steps', type=int, default=10, help='Number of interpolation steps')
+    parser.add_argument('--steps', type=int, default=20, help='Number of interpolation steps')
     parser.add_argument('--batch-size', type=int, default=64, help='Batch size for encoding')
     parser.add_argument('--output', type=str, default='experiments/traversal', help='Output directory')
     args = parser.parse_args()
@@ -137,8 +130,7 @@ def main():
 
     # plot
     model_base = os.path.splitext(os.path.basename(args.model_path))[0]
-    latent_changes = np.abs(z_tgt - z_ctrl)
-    plot_interpolation_and_latent_changes(imgs, latent_changes, args.output, f"{model_base}_{args.control_class}_to_{args.target_class}")
+    plot_interpolation(imgs, args.output, f"{model_base}_{args.control_class}_to_{args.target_class}")
 
 if __name__ == '__main__':
     main()
