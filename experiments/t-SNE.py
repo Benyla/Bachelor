@@ -113,17 +113,23 @@ def main():
     print(f"[INFO] Saved t-SNE scatter plot to {scatter_out}")
     plt.close()
 
-    # 2) Image grid based on embedding proximity
+    # 2) Compute t-SNE on full validation set for image grid visualization
+    print(f"[INFO] Computing t-SNE on full dataset ({len(df)} points) for image grid...")
+    tsne_full = TSNE(n_components=2, init='random', random_state=42)
+    X_full = tsne_full.fit_transform(df[z_cols].values)
+    df['TSNE1_full'], df['TSNE2_full'] = X_full[:,0], X_full[:,1]
+
+    # 3) Image grid based on full validation embeddings
     grid_size = args.grid_size
     # define grid centers
-    x_min, x_max = df_sub['TSNE1'].min(), df_sub['TSNE1'].max()
-    y_min, y_max = df_sub['TSNE2'].min(), df_sub['TSNE2'].max()
+    x_min, x_max = df['TSNE1_full'].min(), df['TSNE1_full'].max()
+    y_min, y_max = df['TSNE2_full'].min(), df['TSNE2_full'].max()
     centers_x = np.linspace(x_min, x_max, grid_size)
     # invert y for top-down plotting
     centers_y = np.linspace(y_max, y_min, grid_size)
 
     # map id to image
-    id_set = set(df_sub['id'].astype(str).tolist())
+    id_set = set(df['id'].astype(str).tolist())
     to_pil = ToPILImage()
     id2img = {}
     print(f"[INFO] Loading images for {len(id_set)} embedded points...")
@@ -138,8 +144,8 @@ def main():
     # assign nearest image to each grid cell
     used = set()
     grid_assign = {}
-    pts = df_sub[['TSNE1','TSNE2']].values
-    ids_array = df_sub['id'].astype(str).values
+    pts = df[['TSNE1_full','TSNE2_full']].values
+    ids_array = df['id'].astype(str).values
     for row in range(grid_size):
         for col in range(grid_size):
             cx, cy = centers_x[col], centers_y[row]
