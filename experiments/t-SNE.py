@@ -123,13 +123,13 @@ def main():
     centers_y = np.linspace(y_max, y_min, grid_size)
 
     # map id to image
-    id_set = set(df_sub['id'].astype(int).tolist())
+    id_set = set(df_sub['id'].astype(str).tolist())
     to_pil = ToPILImage()
     id2img = {}
     print(f"[INFO] Loading images for {len(id_set)} embedded points...")
     for imgs, ids in val_loader:
         for img, idx in zip(imgs, ids):
-            i = int(idx.item())
+            i = str(idx) if isinstance(idx, str) else str(idx.item())
             if i in id_set and i not in id2img:
                 id2img[i] = to_pil(img.cpu())
         if len(id2img) >= len(id_set):
@@ -139,7 +139,7 @@ def main():
     used = set()
     grid_assign = {}
     pts = df_sub[['TSNE1','TSNE2']].values
-    ids_array = df_sub['id'].astype(int).values
+    ids_array = df_sub['id'].astype(str).values
     for row in range(grid_size):
         for col in range(grid_size):
             cx, cy = centers_x[col], centers_y[row]
