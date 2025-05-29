@@ -93,13 +93,13 @@ def main():
     ctrl_df = df[df['moa'] == args.control_class]
     if ctrl_df.empty:
         raise ValueError(f"No samples found for control class '{args.control_class}'")
-    z_ctrl = ctrl_df.iloc[5][[c for c in df.columns if c.startswith('z')]].values
+    z_ctrl = ctrl_df.iloc[70][[c for c in df.columns if c.startswith('z')]].values
 
     # Select target latent (first of target class)
     tgt_df = df[df['moa'] == args.target_class]
     if tgt_df.empty:
         raise ValueError(f"No samples found for target class '{args.target_class}'")
-    z_tgt = tgt_df.iloc[17][[c for c in df.columns if c.startswith('z')]].values
+    z_tgt = tgt_df.iloc[23][[c for c in df.columns if c.startswith('z')]].values
 
     # interpolate
     alphas = np.linspace(0, 1, args.steps)
@@ -112,8 +112,8 @@ def main():
     imgs = decode_batch(model, z_interp, device)
 
     # replace endpoints with original control/target images using df 'id'
-    ctrl_id = ctrl_df.iloc[5]['id']
-    tgt_id = tgt_df.iloc[17]['id']
+    ctrl_id = ctrl_df.iloc[70]['id']
+    tgt_id = tgt_df.iloc[23]['id']
     orig_ctrl, orig_tgt = None, None
     for img_tensor, file_id in val_dataset:
         if file_id == ctrl_id:
