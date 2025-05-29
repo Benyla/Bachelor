@@ -13,6 +13,30 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Spherical linear interpolation (slerp) between two vectors
+def slerp(val, low, high):
+    """
+    Spherical linear interpolation (slerp) between two vectors.
+    Args:
+        val: interpolation value between 0 and 1
+        low: starting vector (numpy array)
+        high: ending vector (numpy array)
+    Returns:
+        Interpolated vector (numpy array)
+    """
+    low_norm = low / np.linalg.norm(low)
+    high_norm = high / np.linalg.norm(high)
+    dot = np.clip(np.dot(low_norm, high_norm), -1.0, 1.0)
+    omega = np.arccos(dot)
+    if np.abs(omega) < 1e-10:
+        # almost the same vector, return linear interpolation
+        return (1.0 - val) * low + val * high
+    so = np.sin(omega)
+    return (
+        np.sin((1.0 - val) * omega) / so * low +
+        np.sin(val * omega) / so * high
+    )
+
 from torch.utils.data import DataLoader, Subset
 from src.models.VAE import VAE
 from src.utils.data_loader import get_data, SingleCellDataset
@@ -117,9 +141,9 @@ def main():
         raise ValueError(f"No samples found for target class '{args.target_class}'")
     z_tgt = tgt_df.iloc[23][[c for c in df.columns if c.startswith('z')]].values.astype(np.float32)
 
-    # interpolate
+    # interpolate using slerp
     alphas = np.linspace(0, 1, args.steps)
-    z_interp = np.array([(1 - a) * z_ctrl + a * z_tgt for a in alphas], dtype=np.float32)
+    z_interp = np.array([slerp(a, z_ctrl, z_tgt) for a in alphas], dtype=np.float32)
 
     # decode
     model = VAE(in_channels=config['model']['in_channels'], latent_dim=config['model']['latent_dim'], use_adv=use_adv).to(device)
