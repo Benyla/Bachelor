@@ -20,8 +20,8 @@ For latent_codes_and_metadata.py
 PYTHONPATH=$(pwd) python experiments/latent_traversal.py \
   --config configs/VAE+_256.yaml \
   --model-path trained_models/VAE+_256_epoch_49.pth \
-  --control-class DMSO \
-  --target-class "Actin disruptors" \
+  --control-class "Microtubule destabilizers" \
+  --target-class "Microtubule stabilizers" \
   --steps 20 \
   --output experiments/plots
 
@@ -35,3 +35,7 @@ for plot_recons.py
 PYTHONPATH=$(pwd) python experiments/plot_recons.py \
   --model VAE+_256_epoch_49.pth \
   --indices 4 12 36 42 52
+
+
+PYTHONPATH=$(pwd) python experiments/plot_val_images_by_moa.py \
+  --moa "DNA Damage"
