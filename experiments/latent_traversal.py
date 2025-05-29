@@ -109,13 +109,13 @@ def main():
     ctrl_df = df[df['moa'] == args.control_class]
     if ctrl_df.empty:
         raise ValueError(f"No samples found for control class '{args.control_class}'")
-    z_ctrl = ctrl_df.iloc[70][[c for c in df.columns if c.startswith('z')]].values
+    z_ctrl = ctrl_df.iloc[70][[c for c in df.columns if c.startswith('z')]].values.astype(np.float32)
 
     # Select target latent (first of target class)
     tgt_df = df[df['moa'] == args.target_class]
     if tgt_df.empty:
         raise ValueError(f"No samples found for target class '{args.target_class}'")
-    z_tgt = tgt_df.iloc[23][[c for c in df.columns if c.startswith('z')]].values
+    z_tgt = tgt_df.iloc[23][[c for c in df.columns if c.startswith('z')]].values.astype(np.float32)
 
     # interpolate
     alphas = np.linspace(0, 1, args.steps)
