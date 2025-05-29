@@ -37,7 +37,7 @@ def plot_interpolation(images, output, prefix):
     n = len(images)
     images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
     rows, cols = 4, 5
-    fig, axes = plt.subplots(rows, cols, figsize=(cols * 2, rows * 2))
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3, rows * 3))
 
     idx = 0
     for r in range(rows):
@@ -110,6 +110,23 @@ def main():
     ckpt = torch.load(args.model_path, map_location=device)
     model.load_state_dict(ckpt['model_state_dict'])
     imgs = decode_batch(model, z_interp, device)
+
+    # replace endpoints with original control/target images using df 'id'
+    ctrl_id = ctrl_df.iloc[5]['id']
+    tgt_id = tgt_df.iloc[17]['id']
+    orig_ctrl, orig_tgt = None, None
+    for img_tensor, file_id in val_dataset:
+        if file_id == ctrl_id:
+            orig_ctrl = img_tensor.cpu().numpy()
+        if file_id == tgt_id:
+            orig_tgt = img_tensor.cpu().numpy()
+        if orig_ctrl is not None and orig_tgt is not None:
+            break
+    if orig_ctrl is None or orig_tgt is None:
+        raise ValueError("Original control or target image not found in val_dataset")
+    # overwrite first and last images
+    imgs[0] = orig_ctrl
+    imgs[-1] = orig_tgt
 
     # plot
     model_base = os.path.splitext(os.path.basename(args.model_path))[0]
