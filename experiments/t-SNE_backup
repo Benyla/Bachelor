@@ -116,8 +116,8 @@ def main():
     # 2) Image grid based on embedding proximity
     grid_size = args.grid_size
     # define grid centers
-    x_min, x_max = df_sub['TSNE1'].min(), df_sub['TSNE1'].max()
-    y_min, y_max = df_sub['TSNE2'].min(), df_sub['TSNE2'].max()
+    x_min, x_max = np.percentile(df['TSNE1'], [1, 99])
+    y_min, y_max = np.percentile(df['TSNE2'], [1, 99])
     centers_x = np.linspace(x_min, x_max, grid_size)
     # invert y for top-down plotting
     centers_y = np.linspace(y_max, y_min, grid_size)

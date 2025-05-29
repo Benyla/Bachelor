@@ -2,10 +2,10 @@ For running PCA_plot.py:
 Use matching config and model. Remove sample_size arg for complete val_loader set. 
 Use mode for "pca" or "distance" (distance matrix) - sample_size arg can be ignored or removed when doing distance
 
-PYTHONPATH=$(pwd) python experiments/t-SNE.py \
-  --config configs/VAE+_256.yaml \
-  --model-path trained_models/VAE+_256_epoch_49.pth \
-  --sample-size 2000 \
+PYTHONPATH=$(pwd) python experiments/t-SNE_backup.py \
+  --config configs/VAE+_128.yaml \
+  --model-path trained_models/VAE+_128_epoch_49.pth \
+  --sample-size 10000 \
   --output experiments/plots \
   --grid-size 50
 
