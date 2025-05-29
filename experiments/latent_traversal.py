@@ -29,15 +29,15 @@ def decode_batch(model, zs, device):
         recon = model.decode(zs)
     return recon.cpu().numpy()
 
-def plot_interpolation_and_latent_changes(images, latent_changes, output, prefix):
+def plot_interpolation_and_latent_changes(images, zs, z_ctrl, z_tgt, output, prefix):
     """
-    Plot interpolation images (2x5) and latent dimension changes in one figure.
+    Plot interpolation images (2x5) and latent speed/distance metrics in one figure.
     """
     n = len(images)
     images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
     
     import matplotlib.gridspec as gridspec
-    fig = plt.figure(figsize=(15, 12))
+    fig = plt.figure(figsize=(15, 8))
     gs = gridspec.GridSpec(3, 1, height_ratios=[2, 2, 1])
     
     # Create a grid for interpolation images
@@ -46,18 +46,27 @@ def plot_interpolation_and_latent_changes(images, latent_changes, output, prefix
         ax = fig.add_subplot(interp_gs[idx // 5, idx % 5])
         img = images[idx]
         ax.imshow(img)
-        ax.set_title(f'Step {idx+1}/{n}', fontsize=8)
+        ax.set_title(f'Step {idx+1}/{n}', fontsize=12)
         ax.axis('off')
-    
-    # Plot latent changes
-    ax_latent = fig.add_subplot(gs[2])
-    dims = np.arange(len(latent_changes))
-    ax_latent.bar(dims, latent_changes)
-    ax_latent.set_xlabel('Latent Dimension')
-    ax_latent.set_ylabel('Absolute Change')
-    ax_latent.set_title('Absolute Changes per Latent Dimension')
-    
-    fig.suptitle(f'Latent Space Traversal and Dimension Changes: {prefix}', fontsize=16)
+
+    # Plot latent speed and relative distances
+    ax_metrics = fig.add_subplot(gs[2])
+    steps = np.arange(1, n+1)
+    # compute speed between consecutive z's
+    speeds = np.linalg.norm(zs[1:] - zs[:-1], axis=1)
+    speeds = np.concatenate([[0.0], speeds])
+    # compute distances to control and target
+    dist_ctrl = np.linalg.norm(zs - np.expand_dims(z_ctrl, 0), axis=1)
+    dist_tgt = np.linalg.norm(zs - np.expand_dims(z_tgt, 0), axis=1)
+    ax_metrics.plot(steps, speeds, '-o', label='Latent Speed')
+    ax_metrics.plot(steps, dist_ctrl, '-s', label='Distance to Control')
+    ax_metrics.plot(steps, dist_tgt, '-^', label='Distance to Target')
+    ax_metrics.set_xlabel('Step')
+    ax_metrics.set_ylabel('Value')
+    ax_metrics.set_title('Latent Speed & Distances')
+    ax_metrics.legend()
+
+    fig.suptitle('Latent Space Traversal', fontsize=16)
     
     os.makedirs(output, exist_ok=True)
     outpath = os.path.join(output, f'{prefix}_traversal_and_latent_changes.png')
@@ -137,8 +146,14 @@ def main():
 
     # plot
     model_base = os.path.splitext(os.path.basename(args.model_path))[0]
-    latent_changes = np.abs(z_tgt - z_ctrl)
-    plot_interpolation_and_latent_changes(imgs, latent_changes, args.output, f"{model_base}_{args.control_class}_to_{args.target_class}")
+    plot_interpolation_and_latent_changes(
+        imgs,
+        z_interp,
+        z_ctrl,
+        z_tgt,
+        args.output,
+        f"{model_base}_{args.control_class}_to_{args.target_class}"
+    )
 
 if __name__ == '__main__':
     main()
