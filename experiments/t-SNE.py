@@ -122,8 +122,8 @@ def main():
     # 3) Image grid based on full validation embeddings
     grid_size = args.grid_size
     # define grid centers
-    x_min, x_max = df['TSNE1_full'].min(), df['TSNE1_full'].max()
-    y_min, y_max = df['TSNE2_full'].min(), df['TSNE2_full'].max()
+    x_min, x_max = np.percentile(df['TSNE1_full'], [1, 99])
+    y_min, y_max = np.percentile(df['TSNE2_full'], [1, 99])
     centers_x = np.linspace(x_min, x_max, grid_size)
     # invert y for top-down plotting
     centers_y = np.linspace(y_max, y_min, grid_size)
