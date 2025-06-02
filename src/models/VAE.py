@@ -108,7 +108,8 @@ class VAE(nn.Module):
 
         # Reconstruction loss - this implementation will add a constant to the loss
         log_px = dist.Normal(x_rec, 1).log_prob(x)
-        recon_loss = -torch.sum(log_px)
+        recon_loss = -torch.sum(log_px) # returning the negative log likelihood makes the loss positive, as we want to minimize it 
+        # logpx is a density function, so loss can be bigger than 1.
 
         # KL loss
         kl_loss = 0.5 * torch.sum(mu.pow(2) + logvar.exp() - 1 - logvar)
@@ -146,11 +147,12 @@ class VAE(nn.Module):
 
     def loss_discriminator(self, x, x_rec):
         # Discriminator loss - gets lower when D is good at classifying real vs fake
+        # this mean assigning 1 to real images and 0 to fake images within the logits
         bce = F.binary_cross_entropy_with_logits # applies sigmoid internally, to get numbers between 0 and 1
         real_logits, _ = self.discriminator(x)
         fake_logits, _ = self.discriminator(x_rec.detach())
         d_loss = (
-            bce(real_logits, self.real_label.expand_as(real_logits)) +
+            bce(real_logits, self.real_label.expand_as(real_logits)) + 
             bce(fake_logits, self.fake_label.expand_as(fake_logits))
         )
         return d_loss
