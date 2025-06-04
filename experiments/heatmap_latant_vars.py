@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import torch
 import argparse
-import json
+from src.utils.config_loader import load_config
 
 # Import the provided function to get latent codes
 from src.utils.latent_codes_and_metadata import get_latent_and_metadata
@@ -57,7 +57,6 @@ if __name__ == "__main__":
     parser.add_argument("--epoch", type=int, required=True, help="Epoch number.")
     args = parser.parse_args()
 
-    with open(args.config, "r") as f:
-        config = json.load(f)
+    config = load_config(args.config)
 
     plot_latent_covariance_heatmap(config, args.epoch)
