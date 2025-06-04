@@ -12,9 +12,9 @@ from src.utils.config_loader import load_config
 # Import the provided function to get latent codes
 from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 
-def plot_latent_means_barplot(config, epoch):
+def plot_latent_stats_barplots(config, epoch):
     """
-    Loads latent codes for a given epoch and plots a barplot of their mean values.
+    Loads latent codes for a given epoch and plots barplots of their mean and variance values.
 
     Args:
         config (dict): Configuration dictionary containing:
@@ -28,21 +28,29 @@ def plot_latent_means_barplot(config, epoch):
     latent_columns = [col for col in df_latents.columns if col.startswith("z")]
     Z = df_latents[latent_columns].values  # shape: (N, latent_dim)
 
-    # Compute mean per dimension
+    # Compute mean and variance per dimension
     mean_vec = np.mean(Z, axis=0)
+    var_vec = np.var(Z, axis=0)
 
-    # Plot bar chart of means
-    plt.figure(figsize=(12, 6))
-    plt.bar(range(len(latent_columns)), mean_vec, edgecolor='black')
-    plt.axhline(0.0, color='red', linestyle='--')
-    plt.title(f"Mean of Latent Codes per Dimension (Epoch {epoch})")
-    plt.xlabel("Latent Dimension Index")
-    plt.ylabel("Mean")
-    plt.legend()
+    # Plot bar charts of means and variances
+    fig, axs = plt.subplots(2, 1, figsize=(15, 12))
+
+    axs[0].bar(range(len(latent_columns)), mean_vec, edgecolor='black')
+    axs[0].axhline(0.0, color='red', linestyle='--')
+    axs[0].set_title(f"Mean of Latent Codes per Dimension (Epoch {epoch})")
+    axs[0].set_xlabel("Latent Dimension Index")
+    axs[0].set_ylabel("Mean")
+
+    axs[1].bar(range(len(latent_columns)), var_vec, edgecolor='black')
+    axs[1].axhline(1.0, color='red', linestyle='--')
+    axs[1].set_title(f"Variance of Latent Codes per Dimension (Epoch {epoch})")
+    axs[1].set_xlabel("Latent Dimension Index")
+    axs[1].set_ylabel("Variance")
+
     plt.tight_layout()
     output_dir = "experiments/plots"
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(os.path.join(output_dir, f"latent_mean_epoch_{epoch}.png"))
+    plt.savefig(os.path.join(output_dir, f"latent_stats_epoch_{epoch}.png"))
     plt.close()
 
 if __name__ == "__main__":
@@ -53,4 +61,4 @@ if __name__ == "__main__":
 
     config = load_config(args.config)
 
-    plot_latent_means_barplot(config, args.epoch)
+    plot_latent_stats_barplots(config, args.epoch)
