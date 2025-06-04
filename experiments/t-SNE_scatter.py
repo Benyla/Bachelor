@@ -107,68 +107,10 @@ def main():
                title='MOA', bbox_to_anchor=(1,1))
     plt.xlabel('t-SNE1'); plt.ylabel('t-SNE2')
     plt.title(f't-SNE of {len(df_sub)} latent codes (even by MOA)')
-    scatter_out = os.path.join(args.output, 'tSNE_scatter.png')
+    scatter_out = os.path.join(args.output, 'tSNE_scatter_new.png')
     plt.tight_layout()
     plt.savefig(scatter_out)
     print(f"[INFO] Saved t-SNE scatter plot to {scatter_out}")
-    plt.close()
-
-    # 2) Image grid based on embedding proximity
-    grid_size = args.grid_size
-    # define grid centers
-    x_min, x_max = np.percentile(df_sub['TSNE1'], [1, 99])
-    y_min, y_max = np.percentile(df_sub['TSNE2'], [1, 99])
-    centers_x = np.linspace(x_min, x_max, grid_size)
-    # invert y for top-down plotting
-    centers_y = np.linspace(y_max, y_min, grid_size)
-
-    # map id to image
-    id_set = set(df_sub['id'].astype(str).tolist())
-    to_pil = ToPILImage()
-    id2img = {}
-    print(f"[INFO] Loading images for {len(id_set)} embedded points...")
-    for imgs, ids in val_loader:
-        for img, idx in zip(imgs, ids):
-            i = str(idx) if isinstance(idx, str) else str(idx.item())
-            if i in id_set and i not in id2img:
-                id2img[i] = to_pil(img.cpu())
-        if len(id2img) >= len(id_set):
-            break
-
-    # assign nearest image to each grid cell
-    used = set()
-    grid_assign = {}
-    pts = df_sub[['TSNE1','TSNE2']].values
-    ids_array = df_sub['id'].astype(str).values
-    for row in range(grid_size):
-        for col in range(grid_size):
-            cx, cy = centers_x[col], centers_y[row]
-            # compute distances
-            dists = np.sqrt((pts[:,0]-cx)**2 + (pts[:,1]-cy)**2)
-            idx_min = int(np.argmin(dists))
-            img_id = ids_array[idx_min]
-            if img_id not in used:
-                grid_assign[(row, col)] = img_id
-                used.add(img_id)
-            else:
-                grid_assign[(row, col)] = None
-
-    # plot image grid
-    fig = plt.figure(figsize=(20,20), dpi=300)
-    for (row, col), img_id in grid_assign.items():
-        if img_id is None:
-            continue
-        left = col / grid_size
-        bottom = (grid_size - row - 1) / grid_size
-        width = 1.0 / grid_size
-        height = 1.0 / grid_size
-        ax = fig.add_axes([left, bottom, width, height])
-        ax.imshow(id2img[img_id])
-        ax.axis('off')
-
-    grid_out = os.path.join(args.output, f'tSNE_image_grid_{grid_size}x{grid_size}.png')
-    plt.savefig(grid_out)
-    print(f"[INFO] Saved t-SNE image grid to {grid_out}")
     plt.close()
 
 
