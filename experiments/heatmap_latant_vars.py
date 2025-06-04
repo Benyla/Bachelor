@@ -12,9 +12,9 @@ from src.utils.config_loader import load_config
 # Import the provided function to get latent codes
 from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 
-def plot_latent_covariance_heatmap(config, epoch):
+def plot_latent_means_barplot(config, epoch):
     """
-    Loads latent codes for a given epoch and plots a heatmap of their covariance matrix.
+    Loads latent codes for a given epoch and plots a barplot of their mean values.
 
     Args:
         config (dict): Configuration dictionary containing:
@@ -28,21 +28,21 @@ def plot_latent_covariance_heatmap(config, epoch):
     latent_columns = [col for col in df_latents.columns if col.startswith("z")]
     Z = df_latents[latent_columns].values  # shape: (N, latent_dim)
 
-    # Compute variance per dimension
-    var_vec = np.var(Z, axis=0)
+    # Compute mean per dimension
+    mean_vec = np.mean(Z, axis=0)
 
-    # Plot bar chart of variances
+    # Plot bar chart of means
     plt.figure(figsize=(12, 6))
-    plt.bar(range(len(latent_columns)), var_vec, edgecolor='black')
-    plt.axhline(1.0, color='red', linestyle='--', label='Prior Variance = 1')
-    plt.title(f"Empirical Variance of Latent Codes per Dimension (Epoch {epoch})")
+    plt.bar(range(len(latent_columns)), mean_vec, edgecolor='black')
+    plt.axhline(0.0, color='red', linestyle='--', label='Expected Mean = 0')
+    plt.title(f"Empirical Mean of Latent Codes per Dimension (Epoch {epoch})")
     plt.xlabel("Latent Dimension Index")
-    plt.ylabel("Empirical Variance")
+    plt.ylabel("Empirical Mean")
     plt.legend()
     plt.tight_layout()
     output_dir = "experiments/plots"
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(os.path.join(output_dir, f"latent_variance_epoch_{epoch}.png"))
+    plt.savefig(os.path.join(output_dir, f"latent_mean_epoch_{epoch}.png"))
     plt.close()
 
 if __name__ == "__main__":
@@ -53,4 +53,4 @@ if __name__ == "__main__":
 
     config = load_config(args.config)
 
-    plot_latent_covariance_heatmap(config, args.epoch)
+    plot_latent_means_barplot(config, args.epoch)
