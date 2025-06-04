@@ -115,7 +115,9 @@ def main():
     xi, yi = np.mgrid[x_min:x_max:300j, y_min:y_max:300j]
 
     # Choose a color palette
-    colors = plt.cm.get_cmap('tab20', len(moas.cat.categories))
+    from matplotlib import colormaps
+    base_cmap = colormaps.get_cmap('tab20')
+    colors = [base_cmap(i / len(moas.cat.categories)) for i in range(len(moas.cat.categories))]
 
     for i, moa in enumerate(moas.cat.categories):
         class_data = df_sub[df_sub['moa'] == moa]
@@ -133,7 +135,7 @@ def main():
             zi_norm = (zi - zi.min()) / (zi.max() - zi.min())
 
             plt.imshow(
-                zi_norm.T, origin='lower', cmap=colors(i), alpha=0.3,
+                zi_norm.T, origin='lower', cmap=mpl.colors.ListedColormap([colors[i]]), alpha=0.3,
                 extent=(x_min, x_max, y_min, y_max), aspect='auto'
             )
         except np.linalg.LinAlgError:
