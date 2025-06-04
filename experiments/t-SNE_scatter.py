@@ -99,21 +99,6 @@ def main():
     plt.scatter(df_sub['TSNE1'], df_sub['TSNE2'],
                 c=df_sub['moa_code'].to_numpy(),
                 cmap=cmap, s=15, alpha=0.7)
-    
-    for moa in moas.cat.categories:
-        class_data = df_sub[df_sub['moa'] == moa]
-        if len(class_data) < 10:
-            continue  # skip small classes
-        x = class_data['TSNE1'].values
-        y = class_data['TSNE2'].values
-        try:
-            kde = gaussian_kde(np.vstack([x, y]))
-            xi, yi = np.mgrid[x.min():x.max():100j, y.min():y.max():100j]
-            zi = kde(np.vstack([xi.flatten(), yi.flatten()]))
-            plt.contour(xi, yi, zi.reshape(xi.shape), levels=3, alpha=0.5, linewidths=1)
-        except np.linalg.LinAlgError:
-            print(f"[WARN] Skipping contour for '{moa}' due to singular covariance matrix.")
-    
     handles = [
         plt.Line2D([0],[0],marker='o',color='w',
                    markerfacecolor=cmap(i),markersize=6)
@@ -123,6 +108,37 @@ def main():
                title='MOA', bbox_to_anchor=(1,1))
     plt.xlabel('t-SNE1'); plt.ylabel('t-SNE2')
     plt.title(f't-SNE of {len(df_sub)} latent codes (even by MOA)')
+
+    # Define shared grid for KDEs
+    x_min, x_max = df_sub['TSNE1'].min(), df_sub['TSNE1'].max()
+    y_min, y_max = df_sub['TSNE2'].min(), df_sub['TSNE2'].max()
+    xi, yi = np.mgrid[x_min:x_max:300j, y_min:y_max:300j]
+
+    # Choose a color palette
+    colors = plt.cm.get_cmap('tab20', len(moas.cat.categories))
+
+    for i, moa in enumerate(moas.cat.categories):
+        class_data = df_sub[df_sub['moa'] == moa]
+        if len(class_data) < 10:
+            continue
+
+        x = class_data['TSNE1'].values
+        y = class_data['TSNE2'].values
+
+        try:
+            kde = gaussian_kde(np.vstack([x, y]))
+            zi = kde(np.vstack([xi.flatten(), yi.flatten()])).reshape(xi.shape)
+
+            # Normalize to [0,1] for transparency scaling
+            zi_norm = (zi - zi.min()) / (zi.max() - zi.min())
+
+            plt.imshow(
+                zi_norm.T, origin='lower', cmap=colors(i), alpha=0.3,
+                extent=(x_min, x_max, y_min, y_max), aspect='auto'
+            )
+        except np.linalg.LinAlgError:
+            print(f"[WARN] Skipping MOA '{moa}' due to KDE error.")
+
     scatter_out = os.path.join(args.output, 'tSNE_scatter_new.png')
     plt.tight_layout()
     plt.savefig(scatter_out)
