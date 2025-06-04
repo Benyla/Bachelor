@@ -41,3 +41,7 @@ PYTHONPATH=$(pwd) python experiments/plot_recons.py \
 
 PYTHONPATH=$(pwd) python experiments/plot_val_images_by_moa.py \
   --moa "DNA Damage"
+
+PYTHONPATH=$(pwd) python experiments/heatmap_latant_vars.py --config configs/VAE+_256.yaml --epoch 49
+
+PYTHONPATH=$(pwd) python experiments/t-SNE.py --config configs/VAE+_256.yaml --model-path trained_models/VAE+_256_epoch_49.pth --sample-size 5000
