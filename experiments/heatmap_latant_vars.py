@@ -34,10 +34,10 @@ def plot_latent_means_barplot(config, epoch):
     # Plot bar chart of means
     plt.figure(figsize=(12, 6))
     plt.bar(range(len(latent_columns)), mean_vec, edgecolor='black')
-    plt.axhline(0.0, color='red', linestyle='--', label='Expected Mean = 0')
-    plt.title(f"Empirical Mean of Latent Codes per Dimension (Epoch {epoch})")
+    plt.axhline(0.0, color='red', linestyle='--')
+    plt.title(f"Mean of Latent Codes per Dimension (Epoch {epoch})")
     plt.xlabel("Latent Dimension Index")
-    plt.ylabel("Empirical Mean")
+    plt.ylabel("Mean")
     plt.legend()
     plt.tight_layout()
     output_dir = "experiments/plots"
