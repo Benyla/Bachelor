@@ -59,6 +59,10 @@ def main():
     config = load_config(args.config)
     config["model"]["checkpoint_path"] = args.model_path
 
+    # Path for caching t-SNE data on full set
+    tsne_data_path = os.path.join("experiments/t-SNE_data", "tsne_full_data.csv")
+    os.makedirs("experiments/t-SNE_data", exist_ok=True)
+
     # prepare val_loader
     _, val_files, _ = get_data()
     val_loader = DataLoader(
@@ -114,10 +118,18 @@ def main():
     plt.close()
 
     # 2) Compute t-SNE on full validation set for image grid visualization
-    print(f"[INFO] Computing t-SNE on full dataset ({len(df)} points) for image grid...")
-    tsne_full = TSNE(n_components=2, init='random', random_state=42)
-    X_full = tsne_full.fit_transform(df[z_cols].values)
-    df['TSNE1_full'], df['TSNE2_full'] = X_full[:,0], X_full[:,1]
+    if os.path.exists(tsne_data_path):
+        print(f"[INFO] Loading cached t-SNE data from {tsne_data_path}")
+        tsne_full_df = pd.read_csv(tsne_data_path)
+        df = df.merge(tsne_full_df, on='id', how='left')
+    else:
+        print(f"[INFO] Computing t-SNE on full dataset ({len(df)} points) for image grid...")
+        tsne_full = TSNE(n_components=2, init='random', random_state=42)
+        X_full = tsne_full.fit_transform(df[z_cols].values)
+        df['TSNE1_full'], df['TSNE2_full'] = X_full[:,0], X_full[:,1]
+        tsne_full_df = df[['id', 'TSNE1_full', 'TSNE2_full']]
+        tsne_full_df.to_csv(tsne_data_path, index=False)
+        print(f"[INFO] Saved t-SNE data to {tsne_data_path}")
 
     # 3) Image grid based on full validation embeddings
     grid_size = args.grid_size
