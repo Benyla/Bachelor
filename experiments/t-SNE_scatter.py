@@ -16,6 +16,7 @@ from src.utils.config_loader import load_config
 from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 from torch.utils.data import DataLoader
 from torchvision.transforms import ToPILImage
+from scipy.stats import gaussian_kde
 
 mpl.rcParams['font.family'] = 'serif'
 
@@ -98,6 +99,21 @@ def main():
     plt.scatter(df_sub['TSNE1'], df_sub['TSNE2'],
                 c=df_sub['moa_code'].to_numpy(),
                 cmap=cmap, s=15, alpha=0.7)
+    
+    for moa in moas.cat.categories:
+        class_data = df_sub[df_sub['moa'] == moa]
+        if len(class_data) < 10:
+            continue  # skip small classes
+        x = class_data['TSNE1'].values
+        y = class_data['TSNE2'].values
+        try:
+            kde = gaussian_kde(np.vstack([x, y]))
+            xi, yi = np.mgrid[x.min():x.max():100j, y.min():y.max():100j]
+            zi = kde(np.vstack([xi.flatten(), yi.flatten()]))
+            plt.contour(xi, yi, zi.reshape(xi.shape), levels=3, alpha=0.5, linewidths=1)
+        except np.linalg.LinAlgError:
+            print(f"[WARN] Skipping contour for '{moa}' due to singular covariance matrix.")
+    
     handles = [
         plt.Line2D([0],[0],marker='o',color='w',
                    markerfacecolor=cmap(i),markersize=6)
