@@ -25,30 +25,24 @@ def plot_latent_covariance_heatmap(config, epoch):
     """
     # Retrieve the DataFrame with latent codes
     df_latents = get_latent_and_metadata(config, epoch)
-    
-    # Extract only the latent code columns (z0, z1, ..., z_{latent_dim-1})
     latent_columns = [col for col in df_latents.columns if col.startswith("z")]
     Z = df_latents[latent_columns].values  # shape: (N, latent_dim)
-    
-    # Compute the empirical covariance matrix (latent_dim x latent_dim)
-    cov_matrix = np.cov(Z, rowvar=False)
-    
-    # Plot the heatmap
-    plt.figure(figsize=(10, 8))
-    sns.heatmap(
-        cov_matrix,
-        cmap="vlag",
-        center=0,
-        xticklabels=latent_columns,
-        yticklabels=latent_columns
-    )
-    plt.title(f"Empirical Covariance of Latent Codes (Epoch {epoch})")
-    plt.xlabel("Latent Dimensions")
-    plt.ylabel("Latent Dimensions")
+
+    # Compute variance per dimension
+    var_vec = np.var(Z, axis=0)
+
+    # Plot bar chart of variances
+    plt.figure(figsize=(12, 6))
+    plt.bar(range(len(latent_columns)), var_vec, edgecolor='black')
+    plt.axhline(1.0, color='red', linestyle='--', label='Prior Variance = 1')
+    plt.title(f"Empirical Variance of Latent Codes per Dimension (Epoch {epoch})")
+    plt.xlabel("Latent Dimension Index")
+    plt.ylabel("Empirical Variance")
+    plt.legend()
     plt.tight_layout()
     output_dir = "experiments/plots"
     os.makedirs(output_dir, exist_ok=True)
-    plt.savefig(os.path.join(output_dir, f"latent_cov_epoch_{epoch}.png"))
+    plt.savefig(os.path.join(output_dir, f"latent_variance_epoch_{epoch}.png"))
     plt.close()
 
 if __name__ == "__main__":
