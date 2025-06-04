@@ -109,38 +109,6 @@ def main():
     plt.xlabel('t-SNE1'); plt.ylabel('t-SNE2')
     plt.title(f't-SNE of {len(df_sub)} latent codes (even by MOA)')
 
-    # Define shared grid for KDEs
-    x_min, x_max = df_sub['TSNE1'].min(), df_sub['TSNE1'].max()
-    y_min, y_max = df_sub['TSNE2'].min(), df_sub['TSNE2'].max()
-    xi, yi = np.mgrid[x_min:x_max:300j, y_min:y_max:300j]
-
-    # Choose a color palette
-    from matplotlib import colormaps
-    base_cmap = colormaps.get_cmap('tab20')
-    colors = [base_cmap(i / len(moas.cat.categories)) for i in range(len(moas.cat.categories))]
-
-    for i, moa in enumerate(moas.cat.categories):
-        class_data = df_sub[df_sub['moa'] == moa]
-        if len(class_data) < 10:
-            continue
-
-        x = class_data['TSNE1'].values
-        y = class_data['TSNE2'].values
-
-        try:
-            kde = gaussian_kde(np.vstack([x, y]))
-            zi = kde(np.vstack([xi.flatten(), yi.flatten()])).reshape(xi.shape)
-
-            # Normalize to [0,1] for transparency scaling
-            zi_norm = (zi - zi.min()) / (zi.max() - zi.min())
-
-            plt.imshow(
-                zi_norm.T, origin='lower', cmap=mpl.colors.ListedColormap([colors[i]]), alpha=0.3,
-                extent=(x_min, x_max, y_min, y_max), aspect='auto'
-            )
-        except np.linalg.LinAlgError:
-            print(f"[WARN] Skipping MOA '{moa}' due to KDE error.")
-
     scatter_out = os.path.join(args.output, 'tSNE_scatter_new.png')
     plt.tight_layout()
     plt.savefig(scatter_out)
