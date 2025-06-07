@@ -1,30 +1,61 @@
-
 import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 import argparse
 import torch
 import pandas as pd
+from matplotlib.gridspec import GridSpec
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 
 # Visualization functions
-def visualize_confusion_matrix(cm, classes, title=None, save_path=None):
-    fig, ax = plt.subplots()
-    im = ax.imshow(cm)
-    ax.set_xticks(range(len(classes)))
-    ax.set_yticks(range(len(classes)))
-    ax.set_xticklabels(classes, rotation=90)
-    ax.set_yticklabels(classes)
-    ax.set_ylabel('True label')
-    ax.set_xlabel('Predicted label')
+def visualize_confusion_matrix(cm, classes, report_dict=None, title=None, save_path=None):
+    # Create figure with two panels: confusion matrix and metrics table
+    fig = plt.figure(figsize=(12, 8))
+    gs = GridSpec(1, 2, width_ratios=[3, 1], figure=fig)
+
+    # Left: confusion matrix
+    ax0 = fig.add_subplot(gs[0])
+    im = ax0.imshow(cm, aspect='auto')
+    ax0.set_xticks(range(len(classes)))
+    ax0.set_yticks(range(len(classes)))
+    ax0.set_xticklabels(classes, rotation=45, ha='right')
+    ax0.set_yticklabels(classes)
+    ax0.set_ylabel('True label')
+    ax0.set_xlabel('Predicted label')
     if title:
-        ax.set_title(title)
+        ax0.set_title(title)
+    cbar = fig.colorbar(im, ax=ax0)
+    cbar.set_label('Count')
+
+    # Right: classification metrics table
+    if report_dict is not None:
+        ax1 = fig.add_subplot(gs[1])
+        ax1.axis('off')
+        # Prepare DataFrame of metrics
+        df_report = pd.DataFrame(report_dict).T
+        # Round numeric columns
+        for col in ['precision', 'recall', 'f1-score']:
+            if col in df_report.columns:
+                df_report[col] = df_report[col].round(2)
+        if 'support' in df_report.columns:
+            df_report['support'] = df_report['support'].astype(int)
+        # Create table
+        table = ax1.table(
+            cellText=df_report.values,
+            rowLabels=df_report.index,
+            colLabels=df_report.columns,
+            loc='center'
+        )
+        table.auto_set_font_size(False)
+        table.set_fontsize(10)
+        table.scale(1, 1.5)
+
     fig.tight_layout()
     if save_path:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight')
     plt.close(fig)
 
 # Import the helper function for loading latent codes, metadata, and configuration
@@ -52,6 +83,10 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     # 1. Load dataframe with latent codes and MOA labels
     df = get_latent_and_metadata(config, epoch)
 
+    # Subsample to balance classes based on the smallest class count
+    min_count = df['moa'].value_counts().min()
+    df = df.groupby('moa', group_keys=False).apply(lambda x: x.sample(min_count, random_state=random_state))
+
     # 2. Prepare features and targets
     z_cols = [c for c in df.columns if c.startswith('z')]
     X = df[z_cols].values
@@ -69,6 +104,7 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     # 5. Evaluate on test set
     y_pred = knn.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
+    report_dict = classification_report(y_test, y_pred, zero_division=0, output_dict=True)
     report = classification_report(y_test, y_pred, zero_division=0)
     cm = confusion_matrix(y_test, y_pred)
 
@@ -80,7 +116,13 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     # Visualize classification performance
     plot_path = os.path.join("experiments", "plots", f"knn_confusion_matrix_k{n_neighbors}_epoch{epoch}.png")
     os.makedirs(os.path.dirname(plot_path), exist_ok=True)
-    visualize_confusion_matrix(cm, knn.classes_, title=f"KNN Confusion Matrix (k={n_neighbors})", save_path=plot_path)
+    visualize_confusion_matrix(
+        cm,
+        knn.classes_,
+        report_dict,
+        title=f"KNN Confusion Matrix (k={n_neighbors})",
+        save_path=plot_path
+    )
 
     return {
         'model': knn,
