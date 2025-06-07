@@ -104,17 +104,25 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     for moa, count in sorted(pred_counts_rf.items(), key=lambda x: x[0]):
         print(f"{moa}: {count}")
 
+    # Encode labels for MLPClassifier
+    from sklearn.preprocessing import LabelEncoder
+    le = LabelEncoder()
+    y_train_enc = le.fit_transform(y_train)
+    y_test_enc = le.transform(y_test)
+
     # Train Neural Network
     nn_clf = MLPClassifier(hidden_layer_sizes=(128,64), alpha=1e-4, max_iter=200, early_stopping=True, random_state=random_state)
-    nn_clf.fit(X_train, y_train)
+    nn_clf.fit(X_train, y_train_enc)
     y_pred_nn = nn_clf.predict(X_test)
-    acc_nn = accuracy_score(y_test, y_pred_nn)
-    report_nn = classification_report(y_test, y_pred_nn, zero_division=0)
+    y_pred_nn_labels = le.inverse_transform(y_pred_nn)
+
+    acc_nn = accuracy_score(y_test, y_pred_nn_labels)
+    report_nn = classification_report(y_test, y_pred_nn_labels, zero_division=0)
     print("Neural Network Classification Report:")
     print(report_nn)
     print(f"Accuracy: {acc_nn:.4f}\n")
     print("Number of predictions per predicted MOA class (NN):")
-    pred_counts_nn = Counter(y_pred_nn)
+    pred_counts_nn = Counter(y_pred_nn_labels)
     for moa, count in sorted(pred_counts_nn.items(), key=lambda x: x[0]):
         print(f"{moa}: {count}")
 
