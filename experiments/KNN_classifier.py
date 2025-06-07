@@ -56,6 +56,9 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     min_count = df['moa'].value_counts().min()
     df = df.groupby('moa', group_keys=False).apply(lambda x: x.sample(min_count, random_state=random_state))
 
+    print("[DEBUG] Class distribution after subsampling:")
+    print(df['moa'].value_counts())
+
     # 2. Prepare features and targets
     z_cols = [c for c in df.columns if c.startswith('z')]
     X = df[z_cols].values
@@ -66,12 +69,25 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
 
+    print("[DEBUG] Class distribution in test set:")
+    from collections import Counter
+    print(Counter(y_test))
+
+    print("[DEBUG] Latent space std per dimension:")
+    print(df[z_cols].std().values)
+
     # 4. Initialize and train KNN
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
     knn.fit(X_train, y_train)
 
     # 5. Evaluate on test set
     y_pred = knn.predict(X_test)
+
+    print("[DEBUG] Sample neighbor labels (first 5 test samples):")
+    dists, neighbors = knn.kneighbors(X_test[:5])
+    for i, n in enumerate(neighbors):
+        print(f"Test sample {i}: {[y_train[j] for j in n]}")
+
     acc = accuracy_score(y_test, y_pred)
     report_dict = classification_report(y_test, y_pred, zero_division=0, output_dict=True)
     report = classification_report(y_test, y_pred, zero_division=0)
