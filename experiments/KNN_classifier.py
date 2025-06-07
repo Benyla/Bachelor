@@ -6,6 +6,9 @@ import torch
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from collections import Counter
 import matplotlib.pyplot as plt
 
 # Visualization functions
@@ -56,9 +59,6 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     min_count = df['moa'].value_counts().min()
     df = df.groupby('moa', group_keys=False).apply(lambda x: x.sample(min_count, random_state=random_state))
 
-    print("[DEBUG] Class distribution after subsampling:")
-    print(df['moa'].value_counts())
-
     # 2. Prepare features and targets
     z_cols = [c for c in df.columns if c.startswith('z')]
     X = df[z_cols].values
@@ -68,32 +68,6 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
-
-    print("[DEBUG] Class distribution in test set:")
-    from collections import Counter
-    print(Counter(y_test))
-
-    import numpy as np
-    from sklearn.metrics import pairwise_distances
-
-    print("[DEBUG] Intra-class average variance, pairwise distances, and centroid distances:")
-    for moa, group in df.groupby('moa'):
-        X_class = group[z_cols].values
-
-        # Average variance across dimensions
-        variances = group[z_cols].var(axis=0)
-        avg_variance = variances.mean()
-
-        # Average pairwise distance within class
-        dists = pairwise_distances(X_class)
-        iu = np.triu_indices_from(dists, k=1)
-        avg_pairwise = dists[iu].mean()
-
-        # Average distance to class centroid
-        centroid = X_class.mean(axis=0)
-        avg_to_centroid = np.linalg.norm(X_class - centroid, axis=1).mean()
-
-        print(f"{moa:30} | avg var: {avg_variance:.4f} | avg pairwise dist: {avg_pairwise:.4f} | avg dist to centroid: {avg_to_centroid:.4f}")
 
     # 4. Initialize and train KNN
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
@@ -112,9 +86,36 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     print(report)
     print(f"Accuracy: {acc:.4f}\n")
     print("Number of predictions per predicted MOA class:")
-    from collections import Counter
     pred_counts = Counter(y_pred)
     for moa, count in sorted(pred_counts.items(), key=lambda x: x[0]):
+        print(f"{moa}: {count}")
+
+    # Train Random Forest
+    rf = RandomForestClassifier(n_estimators=200, class_weight='balanced', random_state=random_state)
+    rf.fit(X_train, y_train)
+    y_pred_rf = rf.predict(X_test)
+    acc_rf = accuracy_score(y_test, y_pred_rf)
+    report_rf = classification_report(y_test, y_pred_rf, zero_division=0)
+    print("Random Forest Classification Report:")
+    print(report_rf)
+    print(f"Accuracy: {acc_rf:.4f}\n")
+    print("Number of predictions per predicted MOA class (RF):")
+    pred_counts_rf = Counter(y_pred_rf)
+    for moa, count in sorted(pred_counts_rf.items(), key=lambda x: x[0]):
+        print(f"{moa}: {count}")
+
+    # Train Neural Network
+    nn_clf = MLPClassifier(hidden_layer_sizes=(128,64), alpha=1e-4, max_iter=200, early_stopping=True, random_state=random_state)
+    nn_clf.fit(X_train, y_train)
+    y_pred_nn = nn_clf.predict(X_test)
+    acc_nn = accuracy_score(y_test, y_pred_nn)
+    report_nn = classification_report(y_test, y_pred_nn, zero_division=0)
+    print("Neural Network Classification Report:")
+    print(report_nn)
+    print(f"Accuracy: {acc_nn:.4f}\n")
+    print("Number of predictions per predicted MOA class (NN):")
+    pred_counts_nn = Counter(y_pred_nn)
+    for moa, count in sorted(pred_counts_nn.items(), key=lambda x: x[0]):
         print(f"{moa}: {count}")
 
     # Visualize classification performance
