@@ -6,29 +6,11 @@ import torch
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from collections import Counter
 import matplotlib.pyplot as plt
-
-# Visualization functions
-def visualize_confusion_matrix(cm, classes, title=None, save_path=None):
-    fig, ax = plt.subplots(figsize=(8, 8))
-    im = ax.imshow(cm, aspect='auto')
-    ax.set_xticks(range(len(classes)))
-    ax.set_yticks(range(len(classes)))
-    ax.set_xticklabels(classes, rotation=45, ha='right')
-    ax.set_yticklabels(classes)
-    ax.set_ylabel('True label')
-    ax.set_xlabel('Predicted label')
-    if title:
-        ax.set_title(title)
-    cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label('Count')
-    fig.tight_layout()
-    if save_path:
-        plt.savefig(save_path, bbox_inches='tight')
-    plt.close(fig)
+import pandas as pd
+from matplotlib.gridspec import GridSpec
 
 # Import the helper function for loading latent codes, metadata, and configuration
 from src.utils.latent_codes_and_metadata import get_latent_and_metadata
@@ -90,20 +72,6 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     for moa, count in sorted(pred_counts.items(), key=lambda x: x[0]):
         print(f"{moa}: {count}")
 
-    # Train Random Forest
-    rf = RandomForestClassifier(n_estimators=200, class_weight='balanced', random_state=random_state)
-    rf.fit(X_train, y_train)
-    y_pred_rf = rf.predict(X_test)
-    acc_rf = accuracy_score(y_test, y_pred_rf)
-    report_rf = classification_report(y_test, y_pred_rf, zero_division=0)
-    print("Random Forest Classification Report:")
-    print(report_rf)
-    print(f"Accuracy: {acc_rf:.4f}\n")
-    print("Number of predictions per predicted MOA class (RF):")
-    pred_counts_rf = Counter(y_pred_rf)
-    for moa, count in sorted(pred_counts_rf.items(), key=lambda x: x[0]):
-        print(f"{moa}: {count}")
-
     # Encode labels for MLPClassifier
     from sklearn.preprocessing import LabelEncoder
     le = LabelEncoder()
@@ -116,8 +84,11 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     y_pred_nn = nn_clf.predict(X_test)
     y_pred_nn_labels = le.inverse_transform(y_pred_nn)
 
-    acc_nn = accuracy_score(y_test, y_pred_nn_labels)
+    # Prepare NN classification report dict
+    report_nn_dict = classification_report(y_test, y_pred_nn_labels, zero_division=0, output_dict=True)
     report_nn = classification_report(y_test, y_pred_nn_labels, zero_division=0)
+
+    acc_nn = accuracy_score(y_test, y_pred_nn_labels)
     print("Neural Network Classification Report:")
     print(report_nn)
     print(f"Accuracy: {acc_nn:.4f}\n")
@@ -126,15 +97,66 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     for moa, count in sorted(pred_counts_nn.items(), key=lambda x: x[0]):
         print(f"{moa}: {count}")
 
-    # Visualize classification performance
-    plot_path = os.path.join("experiments", "plots", f"knn_confusion_matrix_k{n_neighbors}_epoch{epoch}.png")
-    os.makedirs(os.path.dirname(plot_path), exist_ok=True)
-    visualize_confusion_matrix(
-        cm,
-        knn.classes_,
-        title=f"KNN Confusion Matrix (k={n_neighbors})",
-        save_path=plot_path
-    )
+    # --- Figure 1: Combined Confusion Matrices ---
+    cm_nn = confusion_matrix(y_test, y_pred_nn_labels)
+    fig = plt.figure(figsize=(16, 8))
+    gs = GridSpec(1, 2, width_ratios=[1, 1], figure=fig)
+
+    # KNN CM
+    ax0 = fig.add_subplot(gs[0])
+    im0 = ax0.imshow(cm, aspect='auto')
+    ax0.set_title(f"KNN Confusion Matrix (k={n_neighbors})")
+    ax0.set_xticks(range(len(knn.classes_))); ax0.set_xticklabels(knn.classes_, rotation=45, ha='right')
+    ax0.set_yticks(range(len(knn.classes_))); ax0.set_yticklabels(knn.classes_)
+    ax0.set_ylabel('True label'); ax0.set_xlabel('Predicted label')
+    cbar0 = fig.colorbar(im0, ax=ax0); cbar0.set_label('Count')
+
+    # NN CM
+    ax1 = fig.add_subplot(gs[1])
+    im1 = ax1.imshow(cm_nn, aspect='auto')
+    ax1.set_title("NN Confusion Matrix")
+    ax1.set_xticks(range(len(le.classes_))); ax1.set_xticklabels(le.classes_, rotation=45, ha='right')
+    ax1.set_yticks(range(len(le.classes_))); ax1.set_yticklabels(le.classes_)
+    ax1.set_ylabel('True label'); ax1.set_xlabel('Predicted label')
+    cbar1 = fig.colorbar(im1, ax=ax1); cbar1.set_label('Count')
+
+    fig.tight_layout()
+    fig_path1 = os.path.join("experiments", "plots", f"combined_confusion_k{n_neighbors}_epoch{epoch}.png")
+    os.makedirs(os.path.dirname(fig_path1), exist_ok=True)
+    fig.savefig(fig_path1, bbox_inches='tight')
+    plt.close(fig)
+
+    # --- Figure 2: Metrics Tables ---
+    df_knn = pd.DataFrame(report_dict).T
+    df_knn = df_knn[['precision','recall','f1-score','support']].round({'precision':2,'recall':2,'f1-score':2})
+    df_knn['support'] = df_knn['support'].astype(int)
+    df_nn = pd.DataFrame(report_nn_dict).T
+    df_nn = df_nn[['precision','recall','f1-score','support']].round({'precision':2,'recall':2,'f1-score':2})
+    df_nn['support'] = df_nn['support'].astype(int)
+
+    fig2 = plt.figure(figsize=(14, 8))
+    gs2 = GridSpec(1, 2, width_ratios=[1, 1], figure=fig2)
+
+    ax2 = fig2.add_subplot(gs2[0]); ax2.axis('off')
+    table_knn = ax2.table(cellText=df_knn.values,
+                          rowLabels=df_knn.index,
+                          colLabels=df_knn.columns,
+                          loc='center')
+    table_knn.auto_set_font_size(False); table_knn.set_fontsize(10); table_knn.scale(1, 1.5)
+    ax2.set_title(f"KNN Metrics (k={n_neighbors})")
+
+    ax3 = fig2.add_subplot(gs2[1]); ax3.axis('off')
+    table_nn = ax3.table(cellText=df_nn.values,
+                         rowLabels=df_nn.index,
+                         colLabels=df_nn.columns,
+                         loc='center')
+    table_nn.auto_set_font_size(False); table_nn.set_fontsize(10); table_nn.scale(1, 1.5)
+    ax3.set_title("NN Metrics")
+
+    fig2.tight_layout()
+    fig_path2 = os.path.join("experiments", "plots", f"metrics_tables_k{n_neighbors}_epoch{epoch}.png")
+    fig2.savefig(fig_path2, bbox_inches='tight')
+    plt.close(fig2)
 
     return {
         'model': knn,
