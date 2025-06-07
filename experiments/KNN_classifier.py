@@ -111,7 +111,7 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     y_test_enc = le.transform(y_test)
 
     # Train Neural Network
-    nn_clf = MLPClassifier(hidden_layer_sizes=(128,64), alpha=1e-4, max_iter=200, early_stopping=True, random_state=random_state)
+    nn_clf = MLPClassifier(hidden_layer_sizes=(256,128,64), alpha=1e-4, max_iter=200, early_stopping=True, random_state=random_state)
     nn_clf.fit(X_train, y_train_enc)
     y_pred_nn = nn_clf.predict(X_test)
     y_pred_nn_labels = le.inverse_transform(y_pred_nn)
