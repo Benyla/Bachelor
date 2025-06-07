@@ -51,8 +51,6 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     """
     # 1. Load dataframe with latent codes and MOA labels
     df = get_latent_and_metadata(config, epoch)
-    # Remove the "Microtubule stabilizers" class
-    df = df[df['moa'] != 'Microtubule stabilizers']
 
     # Subsample to balance classes based on the smallest class count
     min_count = df['moa'].value_counts().min()
