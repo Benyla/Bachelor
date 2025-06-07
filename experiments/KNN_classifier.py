@@ -3,56 +3,25 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 import argparse
 import torch
-import pandas as pd
-from matplotlib.gridspec import GridSpec
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
 import matplotlib.pyplot as plt
 
 # Visualization functions
-def visualize_confusion_matrix(cm, classes, report_dict=None, title=None, save_path=None):
-    # Create figure with two panels: confusion matrix and metrics table
-    fig = plt.figure(figsize=(12, 8))
-    gs = GridSpec(1, 2, width_ratios=[3, 1], figure=fig)
-
-    # Left: confusion matrix
-    ax0 = fig.add_subplot(gs[0])
-    im = ax0.imshow(cm, aspect='auto')
-    ax0.set_xticks(range(len(classes)))
-    ax0.set_yticks(range(len(classes)))
-    ax0.set_xticklabels(classes, rotation=45, ha='right')
-    ax0.set_yticklabels(classes)
-    ax0.set_ylabel('True label')
-    ax0.set_xlabel('Predicted label')
+def visualize_confusion_matrix(cm, classes, title=None, save_path=None):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    im = ax.imshow(cm, aspect='auto')
+    ax.set_xticks(range(len(classes)))
+    ax.set_yticks(range(len(classes)))
+    ax.set_xticklabels(classes, rotation=45, ha='right')
+    ax.set_yticklabels(classes)
+    ax.set_ylabel('True label')
+    ax.set_xlabel('Predicted label')
     if title:
-        ax0.set_title(title)
-    cbar = fig.colorbar(im, ax=ax0)
+        ax.set_title(title)
+    cbar = fig.colorbar(im, ax=ax)
     cbar.set_label('Count')
-
-    # Right: classification metrics table
-    if report_dict is not None:
-        ax1 = fig.add_subplot(gs[1])
-        ax1.axis('off')
-        # Prepare DataFrame of metrics
-        df_report = pd.DataFrame(report_dict).T
-        # Round numeric columns
-        for col in ['precision', 'recall', 'f1-score']:
-            if col in df_report.columns:
-                df_report[col] = df_report[col].round(2)
-        if 'support' in df_report.columns:
-            df_report['support'] = df_report['support'].astype(int)
-        # Create table
-        table = ax1.table(
-            cellText=df_report.values,
-            rowLabels=df_report.index,
-            colLabels=df_report.columns,
-            loc='center'
-        )
-        table.auto_set_font_size(False)
-        table.set_fontsize(10)
-        table.scale(1, 1.5)
-
     fig.tight_layout()
     if save_path:
         plt.savefig(save_path, bbox_inches='tight')
@@ -112,6 +81,11 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     print(f"KNN Classification Report (k={n_neighbors}):")
     print(report)
     print(f"Accuracy: {acc:.4f}\n")
+    print("Number of predictions per predicted MOA class:")
+    from collections import Counter
+    pred_counts = Counter(y_pred)
+    for moa, count in sorted(pred_counts.items(), key=lambda x: x[0]):
+        print(f"{moa}: {count}")
 
     # Visualize classification performance
     plot_path = os.path.join("experiments", "plots", f"knn_confusion_matrix_k{n_neighbors}_epoch{epoch}.png")
@@ -119,7 +93,6 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     visualize_confusion_matrix(
         cm,
         knn.classes_,
-        report_dict,
         title=f"KNN Confusion Matrix (k={n_neighbors})",
         save_path=plot_path
     )
