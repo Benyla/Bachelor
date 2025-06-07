@@ -133,20 +133,13 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     df_nn = pd.DataFrame(report_nn_dict).T
     df_nn = df_nn[['precision','recall','f1-score','support']].round({'precision':2,'recall':2,'f1-score':2})
     df_nn['support'] = df_nn['support'].astype(int)
-
-    # Remove macro/weighted averages and accuracy from metrics tables
-    df_knn = df_knn.drop(index=['accuracy', 'macro avg', 'weighted avg'], errors='ignore')
-    df_nn = df_nn.drop(index=['accuracy', 'macro avg', 'weighted avg'], errors='ignore')
-
-    # Prepare accuracy tables
-    df_knn_acc = pd.DataFrame([["Accuracy", f"{acc:.4f}"]], columns=["Metric", "Value"])
-    df_nn_acc = pd.DataFrame([["Accuracy", f"{acc_nn:.4f}"]], columns=["Metric", "Value"])
+    df_knn = df_knn.drop(index=['macro avg', 'weighted avg'], errors='ignore')
+    df_nn = df_nn.drop(index=['macro avg', 'weighted avg'], errors='ignore')
 
     fig2 = plt.figure(figsize=(15, 10))
-    gs2 = GridSpec(2, 2, height_ratios=[4, 1], figure=fig2)
+    gs2 = GridSpec(1, 2, width_ratios=[1, 1], figure=fig2)
 
-    # Metrics tables
-    ax2 = fig2.add_subplot(gs2[0, 0]); ax2.axis('off')
+    ax2 = fig2.add_subplot(gs2[0]); ax2.axis('off')
     table_knn = ax2.table(cellText=df_knn.values,
                           rowLabels=df_knn.index,
                           colLabels=df_knn.columns,
@@ -154,26 +147,13 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     table_knn.auto_set_font_size(False); table_knn.set_fontsize(10); table_knn.scale(1, 1.5)
     ax2.set_title(f"KNN Metrics (k={n_neighbors})")
 
-    ax3 = fig2.add_subplot(gs2[0, 1]); ax3.axis('off')
+    ax3 = fig2.add_subplot(gs2[1]); ax3.axis('off')
     table_nn = ax3.table(cellText=df_nn.values,
                          rowLabels=df_nn.index,
                          colLabels=df_nn.columns,
                          loc='center')
     table_nn.auto_set_font_size(False); table_nn.set_fontsize(10); table_nn.scale(1, 1.5)
     ax3.set_title("NN Metrics")
-
-    # Accuracy tables
-    ax4 = fig2.add_subplot(gs2[1, 0]); ax4.axis('off')
-    acc_table_knn = ax4.table(cellText=df_knn_acc.values,
-                              colLabels=df_knn_acc.columns,
-                              loc='center')
-    acc_table_knn.auto_set_font_size(False); acc_table_knn.set_fontsize(12); acc_table_knn.scale(1.5, 1.5)
-
-    ax5 = fig2.add_subplot(gs2[1, 1]); ax5.axis('off')
-    acc_table_nn = ax5.table(cellText=df_nn_acc.values,
-                             colLabels=df_nn_acc.columns,
-                             loc='center')
-    acc_table_nn.auto_set_font_size(False); acc_table_nn.set_fontsize(12); acc_table_nn.scale(1.5, 1.5)
 
     fig2.tight_layout()
     fig_path2 = os.path.join("experiments", "plots", f"metrics_tables_k{n_neighbors}_epoch{epoch}.png")
