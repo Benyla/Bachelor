@@ -73,6 +73,28 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     from collections import Counter
     print(Counter(y_test))
 
+    import numpy as np
+    from sklearn.metrics import pairwise_distances
+
+    print("[DEBUG] Intra-class average variance, pairwise distances, and centroid distances:")
+    for moa, group in df.groupby('moa'):
+        X_class = group[z_cols].values
+
+        # Average variance across dimensions
+        variances = group[z_cols].var(axis=0)
+        avg_variance = variances.mean()
+
+        # Average pairwise distance within class
+        dists = pairwise_distances(X_class)
+        iu = np.triu_indices_from(dists, k=1)
+        avg_pairwise = dists[iu].mean()
+
+        # Average distance to class centroid
+        centroid = X_class.mean(axis=0)
+        avg_to_centroid = np.linalg.norm(X_class - centroid, axis=1).mean()
+
+        print(f"{moa:30} | avg var: {avg_variance:.4f} | avg pairwise dist: {avg_pairwise:.4f} | avg dist to centroid: {avg_to_centroid:.4f}")
+
     # 4. Initialize and train KNN
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
     knn.fit(X_train, y_train)
