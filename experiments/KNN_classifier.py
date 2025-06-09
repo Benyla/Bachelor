@@ -36,10 +36,16 @@ def train_evaluate_knn(config, epoch, n_neighbors=5, test_size=0.2, random_state
     """
     # 1. Load dataframe with latent codes and MOA labels
     df = get_latent_and_metadata(config, epoch)
+    print(f"Total samples before balancing: {len(df)}")
+    print("Sample count per MOA (before balancing):")
+    print(df['moa'].value_counts())
 
     # Subsample to balance classes based on the smallest class count
     min_count = df['moa'].value_counts().min()
     df = df.groupby('moa', group_keys=False).apply(lambda x: x.sample(min_count, random_state=random_state))
+    print(f"\nTotal samples after balancing: {len(df)}")
+    print("Sample count per MOA (after balancing):")
+    print(df['moa'].value_counts())
 
     # 2. Prepare features and targets
     z_cols = [c for c in df.columns if c.startswith('z')]
