@@ -46,4 +46,4 @@ PYTHONPATH=$(pwd) python experiments/heatmap_latant_vars.py --config configs/VAE
 
 PYTHONPATH=$(pwd) python experiments/t-SNE_scatter.py --config configs/VAE+_256.yaml --model-path trained_models/VAE+_256_epoch_49.pth --sample-size 5000
 
-PYTHONPATH=$(pwd) python experiments/KNN_classifier.py --config configs/VAE+_256.yaml --epoch 49 -k 15 --test-size 0.25
+PYTHONPATH=$(pwd) python experiments/KNN_classifier.py --config configs/VAE+_256.yaml --epoch 49 -k 5 --test-size 0.25

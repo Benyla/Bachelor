@@ -21,6 +21,7 @@ mpl.rcParams['font.family'] = 'serif'
 
 # sample_size determines how many total data points to include.
 # If sample_size is None, the entire dataset will be used without downsampling.
+# Subsampling is done evenly across all unique MOA classes.
 def subsample_equal(df, sample_size):
     df = df.dropna(subset=["moa"]).copy()
     classes = df["moa"].unique()
@@ -55,7 +56,7 @@ def main():
                         help="Number of cells per axis in the image grid (e.g. 50 for 50x50)")
     args = parser.parse_args()
 
-    # load config & checkpoint
+    # load config 
     config = load_config(args.config)
     config["model"]["checkpoint_path"] = args.model_path
 
@@ -63,10 +64,10 @@ def main():
     tsne_data_path = os.path.join("experiments/t-SNE_data", "tsne_full_data.csv")
     os.makedirs("experiments/t-SNE_data", exist_ok=True)
 
-    # prepare val_loader
-    _, val_files, _ = get_data()
-    val_loader = DataLoader(
-        SingleCellDataset(val_files),
+    # prepare test_loader
+    _, test_files, _ = get_data()
+    test_loader = DataLoader(
+        SingleCellDataset(test_files),
         batch_size=config["training"]["batch_size"],
         shuffle=False, drop_last=False
     )
@@ -86,7 +87,7 @@ def main():
     z_cols = [c for c in df_sub.columns if c.startswith("z")]
     Z = df_sub[z_cols].values
 
-    # run t-SNE
+    # run t-SNE and df_sub
     tsne = TSNE(n_components=2, init='random', random_state=42)
     X_tsne = tsne.fit_transform(Z)
     df_sub['TSNE1'], df_sub['TSNE2'] = X_tsne[:,0], X_tsne[:,1]
@@ -94,7 +95,7 @@ def main():
     # create output dir
     os.makedirs(args.output, exist_ok=True)
 
-    # 1) Scatter plot colored by MOA
+    # Scatter plot colored by MOA
     plt.figure(figsize=(15,12), dpi=300)
     moas = df_sub['moa'].astype('category')
     df_sub['moa_code'] = moas.cat.codes
@@ -117,7 +118,7 @@ def main():
     print(f"[INFO] Saved t-SNE scatter plot to {scatter_out}")
     plt.close()
 
-    # 2) Compute t-SNE on full validation set for image grid visualization
+    # Compute t-SNE on full test set for image grid visualization
     if os.path.exists(tsne_data_path):
         print(f"[INFO] Loading cached t-SNE data from {tsne_data_path}")
         tsne_full_df = pd.read_csv(tsne_data_path)
@@ -131,10 +132,10 @@ def main():
         tsne_full_df.to_csv(tsne_data_path, index=False)
         print(f"[INFO] Saved t-SNE data to {tsne_data_path}")
 
-    # 3) Image grid based on full validation embeddings
+    # Image grid based on full test embeddings
     grid_size = args.grid_size
     # define grid centers
-    x_min, x_max = np.percentile(df['TSNE1_full'], [1, 99])
+    x_min, x_max = np.percentile(df['TSNE1_full'], [1, 99]) # 1% and 99% percentiles to avoid outliers
     y_min, y_max = np.percentile(df['TSNE2_full'], [1, 99])
     centers_x = np.linspace(x_min, x_max, grid_size)
     # invert y for top-down plotting
@@ -145,7 +146,7 @@ def main():
     to_pil = ToPILImage()
     id2img = {}
     print(f"[INFO] Loading images for {len(id_set)} embedded points...")
-    for imgs, ids in val_loader:
+    for imgs, ids in test_loader:
         for img, idx in zip(imgs, ids):
             i = str(idx) if isinstance(idx, str) else str(idx.item())
             if i in id_set and i not in id2img:

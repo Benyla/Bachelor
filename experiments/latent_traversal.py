@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-latent_traversal.py
-
-Interpolate in the VAE latent space from a control cell to a target class centroid,
-generate intermediate images, and plot the sequence.
-"""
 import argparse
 import os
 import torch
@@ -12,18 +6,14 @@ import torch.nn.functional as F
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from torch.utils.data import DataLoader, Subset
+from src.models.VAE import VAE
+from src.utils.data_loader import get_data, SingleCellDataset
+from src.utils.config_loader import load_config
+from src.utils.latent_codes_and_metadata import get_latent_and_metadata
 
 # Spherical linear interpolation (slerp) between two vectors
 def slerp(val, low, high):
-    """
-    Spherical linear interpolation (slerp) between two vectors.
-    Args:
-        val: interpolation value between 0 and 1
-        low: starting vector (numpy array)
-        high: ending vector (numpy array)
-    Returns:
-        Interpolated vector (numpy array)
-    """
     low_norm = low / np.linalg.norm(low)
     high_norm = high / np.linalg.norm(high)
     dot = np.clip(np.dot(low_norm, high_norm), -1.0, 1.0)
@@ -37,16 +27,7 @@ def slerp(val, low, high):
         np.sin(val * omega) / so * high
     )
 
-from torch.utils.data import DataLoader, Subset
-from src.models.VAE import VAE
-from src.utils.data_loader import get_data, SingleCellDataset
-from src.utils.config_loader import load_config
-from src.utils.latent_codes_and_metadata import get_latent_and_metadata
-
 def decode_batch(model, zs, device):
-    """
-    Decode a numpy array of latent vectors (N, latent_dim) to torch images (N, C, H, W).
-    """
     model.eval()
     zs = torch.from_numpy(zs).to(device)
     with torch.no_grad():
@@ -54,9 +35,6 @@ def decode_batch(model, zs, device):
     return recon.cpu().numpy()
 
 def plot_interpolation_and_latent_changes(images, zs, z_ctrl, z_tgt, output, prefix):
-    """
-    Plot interpolation images (2x5) and latent speed/distance metrics in one figure.
-    """
     n = len(images)
     images = np.transpose(images, (0, 2, 3, 1))  # (N, H, W, C)
     
@@ -112,30 +90,29 @@ def main():
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # load config & set checkpoint
+    # load config 
     config = load_config(args.config)
     config['model']['checkpoint_path'] = args.model_path
     use_adv = config['model'].get('use_adv', False)
-    # add metadata path
-    # assume config contains metadata_csv key or override here
+    # get metadata CSV path if not provided
     if 'metadata_csv' not in config:
-        config['metadata_csv'] = os.path.expanduser('~/data/metadata.csv')  # adjust as needed
+        config['metadata_csv'] = os.path.expanduser('~/data/metadata.csv') 
 
-    # prepare validation loader
-    _, val_files, _ = get_data()
-    val_dataset = SingleCellDataset(val_files)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
+    # prepare test loader
+    _, test_files, _ = get_data()
+    test_dataset = SingleCellDataset(test_files)
+    val_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     # get all latents and metadata
     df = get_latent_and_metadata(config, 49)
 
-    # select control latent (first of control class)
+    # select control latent (index 70 is chossen here, but can be adjusted)
     ctrl_df = df[df['moa'] == args.control_class]
     if ctrl_df.empty:
         raise ValueError(f"No samples found for control class '{args.control_class}'")
     z_ctrl = ctrl_df.iloc[70][[c for c in df.columns if c.startswith('z')]].values.astype(np.float32)
 
-    # Select target latent (first of target class)
+    # Select target latent
     tgt_df = df[df['moa'] == args.target_class]
     if tgt_df.empty:
         raise ValueError(f"No samples found for target class '{args.target_class}'")
@@ -155,7 +132,7 @@ def main():
     ctrl_id = ctrl_df.iloc[70]['id']
     tgt_id = tgt_df.iloc[23]['id']
     orig_ctrl, orig_tgt = None, None
-    for img_tensor, file_id in val_dataset:
+    for img_tensor, file_id in test_dataset:
         if file_id == ctrl_id:
             orig_ctrl = img_tensor.cpu().numpy()
         if file_id == tgt_id:

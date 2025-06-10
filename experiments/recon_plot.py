@@ -11,7 +11,7 @@ files = {
     'VAE (128)': 'val_recon_VAE_128.csv'
 }
 
-# Subtract constant
+# Subtract constant - see section 6.1.1
 CONSTANT = 11292
 
 # Load data and prepare for plotting

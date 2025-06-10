@@ -7,30 +7,30 @@ from src.models.VAE import VAE
 from src.utils.data_loader import get_data
 
 # Configuration
-CHECKPOINT_DIR = 'trained_models'          # directory with your .pth files
-IMAGE_IDX      = 1                        # index of the image in the val set
+CHECKPOINT_DIR = 'trained_models' # dir with terained models
+IMAGE_IDX      = 1  # index of the image in the test set
 DEVICE         = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Define the models you trained
+# Define models
 models = {
     'VAE_128':  (False, 128),
     'VAE_256':  (False, 256),
     'VAE+_128': (True, 128),
     'VAE+_256': (True, 256),
 }
-# Epoch checkpoints you saved
+# Epoch checkpoints 
 epochs = [10, 20, 30, 40, 49]
 
-# Load validation file paths
-_, val_files, _ = get_data()
+# Load test data
+_, test_files, _ = get_data()
 
-# Load and preprocess the selected image from file
-path = val_files[IMAGE_IDX]
+# Load and preprocess the selected image 
+path = test_files[IMAGE_IDX]
 data = torch.load(path)
 if isinstance(data, torch.Tensor):
     img = data
 elif isinstance(data, dict):
-    img = data['image']
+    img = data['image'] # can be removed - data is tensor
 else:
     raise ValueError(f"Unsupported data format in {path}")
 img = img.unsqueeze(0).to(DEVICE)
@@ -40,7 +40,7 @@ n_rows = len(models)
 n_cols = len(epochs) + 1
 fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols * 3 - 3, n_rows * 3 - 2))
 
-# Overall title to match your first script
+# Overall title 
 fig.suptitle('Model Reconstructions Across Epochs', fontsize=16)
 
 # Explicit y-axis labels for each model row
@@ -86,7 +86,7 @@ for i, (model_name, (use_adv, latent_dim)) in enumerate(models.items()):
     if i == 0:
         ax_orig.set_title('Original', fontsize=12)
 
-# Tweak spacing exactly like your working first script
+# Tweak spacing 
 os.makedirs('experiments/plots', exist_ok=True)
 out_path = os.path.join('experiments/plots', 'reconstructions_grid.png')
 plt.subplots_adjust(left=0.04, right=0.96, top=0.92, bottom=0.05, wspace=0.1, hspace=0.1)

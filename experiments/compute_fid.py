@@ -30,7 +30,7 @@ def get_activations(loader, model, device):
             batch = F.interpolate(batch, size=(299, 299),
                                   mode='bilinear', align_corners=False)
             batch = normalize(batch)
-            pred = model(batch)[0]       # pool3 features
+            pred = model(batch)[0]       
             pred = pred.squeeze(-1).squeeze(-1)
             acts.append(pred.cpu().numpy())
     return np.concatenate(acts, axis=0)
@@ -69,13 +69,11 @@ def main():
     ckpt = torch.load(args.model_path, map_location=device)
     vae.load_state_dict(ckpt['model_state_dict'])
 
-    # Inception for FID
     block = InceptionV3.BLOCK_INDEX_BY_DIM[2048]
     inc   = InceptionV3([block]).to(device)
 
-    # Real data
-    _, val_files, _ = get_data()
-    full_ds = SingleCellDataset(val_files)
+    _, test_files, _ = get_data()
+    full_ds = SingleCellDataset(test_files)
     total   = len(full_ds)
     nsamp   = args.num_samples or total
 

@@ -7,25 +7,23 @@ import matplotlib.pyplot as plt
 from src.utils.data_loader import get_data
 
 def main():
-    # Get val filepaths
-    _, val_files, _ = get_data()
+    # Get test data
+    _, test_files, _ = get_data()
 
     # Take first 100
-    val_files = val_files[:100]
-    print(f"[INFO] Plotting {len(val_files)} images from val set.")
+    test_files = test_files[:100]
+    print(f"[INFO] Plotting {len(test_files)} images from val set.")
 
 
     # Load images
     images = []
-    for path in val_files:
+    for path in test_files:
         data = torch.load(path)
-        print(f"[DEBUG] Loaded file: {path}, type: {type(data)}")
+        print(f"[DEBUG] Loaded file: {path}, type: {type(data)}") # problems with data format?
         if isinstance(data, torch.Tensor):
             img = data.numpy()
         elif isinstance(data, dict):
-            img = data['image'].numpy()  # Change 'image' if a different key is used
-        else:
-            raise ValueError(f"Unsupported data format in {path}")
+            img = data['image'].numpy()  # can be removed - data is tensor
         if img.shape[0] == 3:
             img = np.transpose(img, (1,2,0))  # Convert (3,64,64) to (64,64,3)
         images.append(img)
@@ -39,7 +37,7 @@ def main():
 
     # Save
     os.makedirs("experiments/plots", exist_ok=True)
-    plot_path = os.path.join("experiments/plots", "val_grid.png")
+    plot_path = os.path.join("experiments/plots", "test_grid.png")
     plt.savefig(plot_path)
     print(f"[INFO] Saved plot to {plot_path}")
 
