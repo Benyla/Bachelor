@@ -6,9 +6,6 @@ from sklearn.model_selection import train_test_split
 
 class SingleCellDataset(Dataset):
     def __init__(self, file_list):
-        """
-        file_list: list of paths to preprocessed .pt files.
-        """
         self.file_list = file_list
         
     def __len__(self):
@@ -30,7 +27,7 @@ def get_data():
     Splits the data into train, validation, and test sets.
     """
     # Updated data root: processed files are now stored here
-    #data_root = '/zhome/e9/c/186947/cell_images_processed'
+    # data_root = '/zhome/e9/c/186947/cell_images_processed'
     data_root = '/work3/s224194/cell_images_processed'
     pattern = os.path.join(data_root, '**', '*.pt')
     all_files = glob.glob(pattern, recursive=True)

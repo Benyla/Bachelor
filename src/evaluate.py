@@ -3,12 +3,7 @@ import torch
 import re
 
 def validate(model, val_loader, device, config=None, epoch=None):
-    """
-    Runs validation, computes loss metrics, and optionally saves latent codes with IDs.
 
-    Returns:
-        Tuple: average_val_loss, average_recon_loss, average_kl_loss, average_adv_loss
-    """
     model.eval()
     loss_acc = {"total": 0.0, "recon": 0.0, "kl": 0.0, "adv": 0.0}
     latents, ids_all = [], []
