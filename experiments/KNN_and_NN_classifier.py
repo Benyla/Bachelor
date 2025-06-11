@@ -3,6 +3,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "src")))
 
 import argparse
 import torch
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
@@ -18,7 +19,7 @@ from src.utils.config_loader import load_config
 
 def train_evaluate_knn_nn(config, epoch, n_neighbors=5, test_size=0.2, random_state=42):
 
-    # 1. Load dataframe with latent codes and MOA labels
+    # Load dataframe with latent codes and MOA labels
     df = get_latent_and_metadata(config, epoch)
     print(f"Total samples before balancing: {len(df)}")
     print("Sample count per MOA (before balancing):")
@@ -40,6 +41,11 @@ def train_evaluate_knn_nn(config, epoch, n_neighbors=5, test_size=0.2, random_st
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
+
+    # Baseline classifier (random guessing)
+    y_pred_random = np.random.choice(y_test, size=len(y_test), replace=True)
+    acc_random = accuracy_score(y_test, y_pred_random)
+    print(f"Random Guessing Accuracy: {acc_random:.4f}\n")
 
     # train KNN
     knn = KNeighborsClassifier(n_neighbors=n_neighbors)
