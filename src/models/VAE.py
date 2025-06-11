@@ -1,3 +1,6 @@
+# Build with inspiration from https://proceedings.mlr.press/v102/lafarge19a.html
+# And https://github.com/AntixK/PyTorch-VAE?
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
