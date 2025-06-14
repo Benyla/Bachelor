@@ -32,6 +32,13 @@ def train_evaluate_knn_nn(config, epoch, n_neighbors=5, test_size=0.2, random_st
     print("Sample count per MOA (after balancing):")
     print(df['moa'].value_counts())
 
+    # Calculate and print variance for each MOA class in the latent space
+    print("\nPer-class variance in the latent space:")
+    for moa, group in df.groupby('moa'):
+        latent_vars = group[[c for c in df.columns if c.startswith('z')]].var(axis=0)
+        mean_var = latent_vars.mean()
+        print(f"{moa}: mean variance = {mean_var:.4f}")
+
     # Prepare features and labels
     z_cols = [c for c in df.columns if c.startswith('z')]
     X = df[z_cols].values
